@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/docker/go-connections/nat"
 	dbaasbase "github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3"
 	"github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3/model"
 	pgdbaas "github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4"
@@ -17,7 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -54,7 +53,17 @@ func TestSuite(t *testing.T) {
 func (suite *DaoTestSuit) SetupSuite() {
 	suite.ctx = context.Background()
 	configloader.Init(configloader.EnvPropertySource())
-	suite.pgContainer = prepareTestContainer(suite.T(), suite.ctx)
+	postgresContainer, err := postgres.Run(suite.ctx,
+		"postgres:11.1",
+		postgres.WithDatabase(testContainerDb),
+		postgres.WithUsername(testContainerDbUser),
+		postgres.WithPassword(testContainerDbPassword),
+		postgres.BasicWaitStrategies(),
+	)
+	if err != nil {
+		suite.T().Error(err)
+	}
+	suite.pgContainer = postgresContainer
 	addr, err := suite.pgContainer.Endpoint(suite.ctx, "")
 	if err != nil {
 		suite.T().Error(err)
@@ -285,36 +294,6 @@ func (suite *DaoTestSuit) createPgClientForTest() pgdbaas.PgClient {
 		logger.PanicC(suite.ctx, "Can't migrate existing schema: %v", err)
 	}
 	return pgClient
-}
-
-func prepareTestContainer(t *testing.T, ctx context.Context) testcontainers.Container {
-	dockerAddr := configloader.GetKoanf().String("test.docker.url")
-	if err := os.Setenv("DOCKER_HOST", dockerAddr); err != nil {
-		logger.PanicC(ctx, "Failed to set env DOCKER_HOST=%s\n %v", dockerAddr, err)
-	}
-	env := map[string]string{
-		"POSTGRES_USER":     testContainerDbUser,
-		"POSTGRES_PASSWORD": testContainerDbPassword,
-		"POSTGRES_DB":       testContainerDb,
-	}
-	port, _ := nat.NewPort("tcp", postgresPort)
-	req := testcontainers.ContainerRequest{
-		Image:        "postgres:11.1",
-		ExposedPorts: []string{port.Port()},
-		SkipReaper:   true,
-		Env:          env,
-		WaitingFor: wait.ForAll(
-			wait.ForListeningPort(port),
-		),
-	}
-	pgContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	if err != nil {
-		t.Error(err)
-	}
-	return pgContainer
 }
 
 func pgDbaasResponseHandler(address, password string) []byte {

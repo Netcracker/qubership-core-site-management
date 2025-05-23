@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/docker/go-connections/nat"
 	gerrors "github.com/go-errors/errors"
 	dbaasbase "github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3"
 	"github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3/model"
@@ -15,8 +14,7 @@ import (
 	"github.com/netcracker/qubership-core-lib-go/v3/security"
 	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
 	"github.com/stretchr/testify/assert"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/migrate"
 	"net/http"
@@ -54,7 +52,16 @@ func testMigration(t *testing.T, fail bool) {
 	ctx := context.Background()
 	configloader.Init(configloader.EnvPropertySource())
 
-	pgContainer := prepareTestContainer(t, ctx)
+	pgContainer, err := postgres.Run(ctx,
+		"postgres:11.1",
+		postgres.WithDatabase(testContainerDb),
+		postgres.WithUsername(testContainerDbUser),
+		postgres.WithPassword(testContainerDbPassword),
+		postgres.BasicWaitStrategies(),
+	)
+	if err != nil {
+		t.Error(err)
+	}
 	addr, err := pgContainer.Endpoint(ctx, "")
 	if err != nil {
 		t.Error(err)
@@ -149,36 +156,6 @@ func testMigration(t *testing.T, fail bool) {
 	if err != nil {
 		t.Fatal(err)
 	}
-}
-
-func prepareTestContainer(t *testing.T, ctx context.Context) testcontainers.Container {
-	dockerAddr := configloader.GetKoanf().String("test.docker.url")
-	if err := os.Setenv("DOCKER_HOST", dockerAddr); err != nil {
-		log.PanicC(ctx, "Failed to set env DOCKER_HOST=%s\n %v", dockerAddr, err)
-	}
-	env := map[string]string{
-		"POSTGRES_USER":     testContainerDbUser,
-		"POSTGRES_PASSWORD": testContainerDbPassword,
-		"POSTGRES_DB":       testContainerDb,
-	}
-	port, _ := nat.NewPort("tcp", postgresPort)
-	req := testcontainers.ContainerRequest{
-		Image:        "postgres:11.1",
-		ExposedPorts: []string{port.Port()},
-		SkipReaper:   true,
-		Env:          env,
-		WaitingFor: wait.ForAll(
-			wait.ForListeningPort(port),
-		),
-	}
-	pgContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	if err != nil {
-		t.Error(err)
-	}
-	return pgContainer
 }
 
 func pgDbaasResponseHandler(address, password string) []byte {
