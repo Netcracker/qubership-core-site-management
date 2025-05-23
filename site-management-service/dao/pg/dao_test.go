@@ -12,23 +12,17 @@ import (
 	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/migration"
+	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/testharness"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
-)
-
-const (
-	testContainerDbPassword = "123qwerty"
-	testContainerDbUser     = "postgres"
-	testContainerDb         = "demo"
 )
 
 func TestMain(m *testing.M) {
@@ -50,17 +44,7 @@ func TestSuite(t *testing.T) {
 func (suite *DaoTestSuit) SetupSuite() {
 	suite.ctx = context.Background()
 	configloader.Init(configloader.EnvPropertySource())
-	postgresContainer, err := postgres.Run(suite.ctx,
-		"postgres:11.1",
-		postgres.WithDatabase(testContainerDb),
-		postgres.WithUsername(testContainerDbUser),
-		postgres.WithPassword(testContainerDbPassword),
-		postgres.BasicWaitStrategies(),
-	)
-	if err != nil {
-		suite.T().Error(err)
-	}
-	suite.pgContainer = postgresContainer
+	suite.pgContainer = testharness.PreparePostgres(suite.T(), suite.ctx)
 	addr, err := suite.pgContainer.Endpoint(suite.ctx, "")
 	if err != nil {
 		suite.T().Error(err)
@@ -69,7 +53,7 @@ func (suite *DaoTestSuit) SetupSuite() {
 	suite.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "/databases") {
 			w.WriteHeader(http.StatusOK)
-			jsonString := pgDbaasResponseHandler(addr, testContainerDbPassword)
+			jsonString := pgDbaasResponseHandler(addr, testharness.PostgresPassword)
 			w.Write(jsonString)
 		} else {
 			http.NotFoundHandler().ServeHTTP(w, r)
@@ -294,11 +278,11 @@ func (suite *DaoTestSuit) createPgClientForTest() pgdbaas.PgClient {
 }
 
 func pgDbaasResponseHandler(address, password string) []byte {
-	url := fmt.Sprintf("postgresql://%s/%s", address, testContainerDb)
+	url := fmt.Sprintf("postgresql://%s/%s", address, testharness.PostgresDatabase)
 	connectionProperties := map[string]interface{}{
 		"password": password,
 		"url":      url,
-		"username": testContainerDbUser,
+		"username": testharness.PostgresUsername,
 		"role":     "admin",
 	}
 	dbResponse := model.LogicalDb{

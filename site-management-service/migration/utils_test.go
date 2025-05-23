@@ -13,8 +13,8 @@ import (
 	"github.com/netcracker/qubership-core-lib-go/v3/configloader"
 	"github.com/netcracker/qubership-core-lib-go/v3/security"
 	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
+	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/testharness"
 	"github.com/stretchr/testify/assert"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/migrate"
 	"net/http"
@@ -22,12 +22,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-)
-
-const (
-	testContainerDbPassword = "123qwerty"
-	testContainerDbUser     = "postgres"
-	testContainerDb         = "demo"
 )
 
 func TestMain(m *testing.M) {
@@ -47,16 +41,7 @@ func testMigration(t *testing.T, fail bool) {
 	ctx := context.Background()
 	configloader.Init(configloader.EnvPropertySource())
 
-	pgContainer, err := postgres.Run(ctx,
-		"postgres:11.1",
-		postgres.WithDatabase(testContainerDb),
-		postgres.WithUsername(testContainerDbUser),
-		postgres.WithPassword(testContainerDbPassword),
-		postgres.BasicWaitStrategies(),
-	)
-	if err != nil {
-		t.Error(err)
-	}
+	pgContainer := testharness.PreparePostgres(t, ctx)
 	addr, err := pgContainer.Endpoint(ctx, "")
 	if err != nil {
 		t.Error(err)
@@ -65,7 +50,7 @@ func testMigration(t *testing.T, fail bool) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "/databases") {
 			w.WriteHeader(http.StatusOK)
-			jsonString := pgDbaasResponseHandler(addr, testContainerDbPassword)
+			jsonString := pgDbaasResponseHandler(addr, testharness.PostgresPassword)
 			w.Write(jsonString)
 		} else {
 			http.NotFoundHandler().ServeHTTP(w, r)
@@ -154,11 +139,11 @@ func testMigration(t *testing.T, fail bool) {
 }
 
 func pgDbaasResponseHandler(address, password string) []byte {
-	url := fmt.Sprintf("postgresql://%s/%s", address, testContainerDb)
+	url := fmt.Sprintf("postgresql://%s/%s", address, testharness.PostgresDatabase)
 	connectionProperties := map[string]interface{}{
 		"password": password,
 		"url":      url,
-		"username": testContainerDbUser,
+		"username": testharness.PostgresUsername,
 		"role":     "admin",
 	}
 	dbResponse := model.LogicalDb{
