@@ -25,15 +25,10 @@ import (
 )
 
 const (
-	postgresPort            = "5432"
 	testContainerDbPassword = "123qwerty"
 	testContainerDbUser     = "postgres"
 	testContainerDb         = "demo"
-
-	m2mKeycloakTokenEndpoint = "auth/realms/cloud-common/protocol/openid-connect/token"
 )
-
-var mockServer *httptest.Server
 
 func TestMain(m *testing.M) {
 	serviceloader.Register(1, &security.DummyToken{})
@@ -175,16 +170,12 @@ func pgDbaasResponseHandler(address, password string) []byte {
 }
 
 func prepareTestEnvironment(serverUrl string) {
-	os.Setenv("policy.file.name", "../testdata/test-policies.conf")
-	os.Setenv("identity.provider.url", serverUrl)
 	os.Setenv("dbaas.agent", serverUrl)
 	os.Setenv("microservice.namespace", "site-management-namespace")
 	os.Setenv("microservice.name", "site-management")
 }
 
 func cleanTestEnvironment() {
-	os.Unsetenv("policy.file.name")
-	os.Unsetenv("identity.provider.url")
 	os.Unsetenv("dbaas.agent")
 }
 
