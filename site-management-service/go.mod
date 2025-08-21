@@ -3,20 +3,19 @@ module github.com/netcracker/qubership-core-site-management/site-management-serv
 go 1.24.2
 
 require (
-	github.com/docker/go-connections v0.5.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-errors/errors v1.5.1
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/mitchellh/hashstructure/v2 v2.0.2
-	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.0.0-20250508141922-a6a37e9d9b96
-	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.0.0-20250505145933-fe8e90a2dbd8
-	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.0.0-20250505150011-8af5ff8da9f2
-	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.0.0-20250505150321-09ac8e0e3ac2
-	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.0.0-20250508142012-e92225d73d9f
-	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.0.0-20250508142033-f62ad55b81e4
-	github.com/netcracker/qubership-core-lib-go/v3 v3.0.0-20250513173212-f9911835b86e
+	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.0.0-20250820163431-9fe13b203d71
+	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.0.0-20250820163446-1dfb1c34f40c
+	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.0.0-20250820163518-f22d93fe84c9
+	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.0.0-20250820163454-1090b62c860a
+	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.0.0-20250820163453-b2c1ad7a88eb
+	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.0.0-20250820163513-90a614bb597d
+	github.com/netcracker/qubership-core-lib-go/v3 v3.0.0-20250820163501-9b676001fe34
 	github.com/smarty/assertions v1.16.0
 	github.com/stretchr/testify v1.10.0
 	github.com/swaggo/swag v1.16.4
@@ -46,6 +45,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/docker v28.0.1+incompatible // indirect
+	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.8.2 // indirect
 	github.com/fatih/color v1.18.0 // indirect
