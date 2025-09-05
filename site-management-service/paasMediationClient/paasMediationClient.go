@@ -5,12 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/go-errors/errors"
-	"github.com/netcracker/qubership-core-lib-go/v3/logging"
-	wrappers "github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain/wrappers"
-	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
-	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
-	"github.com/valyala/fasthttp"
 	"io"
 	"net/http"
 	"net/url"
@@ -20,6 +14,13 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/go-errors/errors"
+	"github.com/netcracker/qubership-core-lib-go/v3/logging"
+	wrappers "github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain/wrappers"
+	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
+	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
+	"github.com/valyala/fasthttp"
 )
 
 type (
@@ -77,6 +78,8 @@ type RoutesCallback func(context.Context, *PaasMediationClient, RouteUpdate) err
 
 const (
 	routesString             string = "routes"
+	httpRoutesString         string = "gateway/httproutes"
+	grpcRoutesString         string = "gateway/grpcroutes"
 	configmapsString         string = "configmaps"
 	servicesString           string = "services"
 	ProjectTypeConfigMapName string = "baseline-version"
@@ -441,6 +444,8 @@ func (c *PaasMediationClient) GetRoutes(ctx context.Context, namespace string) (
 		logger.WarnC(ctx, "Namespace %s was not found in cache, trying to get routes from paas-mediation service", namespace)
 		c.cache.routesCache.mutex.RUnlock()
 		CreateWebSocketClient(ctx, &c.cache.routesCache.bus, c.InternalGatewayAddress.Host, namespace, routesString)
+		CreateWebSocketClient(ctx, &c.cache.routesCache.bus, c.InternalGatewayAddress.Host, namespace, httpRoutesString)
+		CreateWebSocketClient(ctx, &c.cache.routesCache.bus, c.InternalGatewayAddress.Host, namespace, grpcRoutesString)
 		for i := 0; ; i++ {
 			time.Sleep(sleepInit)
 			c.cache.routesCache.mutex.RLock()
@@ -916,6 +921,8 @@ func (c *PaasMediationClient) initRoutesCache(ctx context.Context, ch chan *Rout
 
 	channel := make(chan []byte, 50)
 	CreateWebSocketClient(ctx, &channel, c.InternalGatewayAddress.Host, c.Namespace, routesString)
+	CreateWebSocketClient(ctx, &channel, c.InternalGatewayAddress.Host, c.Namespace, httpRoutesString)
+	CreateWebSocketClient(ctx, &channel, c.InternalGatewayAddress.Host, c.Namespace, grpcRoutesString)
 
 	routesCache := RoutesCache{
 		mutex:     newMutex,
