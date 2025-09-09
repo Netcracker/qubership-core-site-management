@@ -17,7 +17,7 @@ require (
 	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.0.0-20250508142033-f62ad55b81e4
 	github.com/netcracker/qubership-core-lib-go/v3 v3.0.0-20250513173212-f9911835b86e
 	github.com/smarty/assertions v1.16.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/swag v1.16.6
 	github.com/testcontainers/testcontainers-go v0.37.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.37.0
