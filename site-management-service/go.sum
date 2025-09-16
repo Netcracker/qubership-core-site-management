@@ -99,8 +99,8 @@ github.com/gofiber/fiber/v2 v2.52.9/go.mod h1:YEcBbO/FB+5M1IZNBP9FO3J9281zgPArei
 github.com/gogo/protobuf v1.1.1/go.mod h1:r8qH/GZQm5c6nD/R0oafs1akxWv10x8SbQlK7atdtwQ=
 github.com/gogo/protobuf v1.3.2 h1:Ov1cvc58UF3b5XjBnZv7+opcTcQFZebYjWzi34vdm4Q=
 github.com/gogo/protobuf v1.3.2/go.mod h1:P1XiOD3dCwIKUDQYPy72D8LYyHL2YPYrpS2s69NZV8Q=
-github.com/golang-jwt/jwt v3.2.2+incompatible h1:IfV12K8xAKAnZqdXVzCZ+TOjboZ2keLg81eXfW3O+oY=
-github.com/golang-jwt/jwt v3.2.2+incompatible/go.mod h1:8pz2t5EyA70fFQQSrl6XZXzqecmYZeUEB8OUGHkxJ+I=
+github.com/golang-jwt/jwt/v5 v5.2.2 h1:Rl4B7itRWVtYIHFrSNd7vhTiz9UpLdi6gZhZ3wEeDy8=
+github.com/golang-jwt/jwt/v5 v5.2.2/go.mod h1:pqrtFR0X4osieyHYxtmOUWsAWrfe1Q5UVIyoH402zdk=
 github.com/golang/mock v1.6.0 h1:ErTB+efbowRARo13NNdxyJji2egdxLGQhRaY+DUumQc=
 github.com/golang/mock v1.6.0/go.mod h1:p6yTPP+5HYm5mzsMV8JkE6ZKdX+/wYM6Hr+LicevLPs=
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
@@ -288,8 +288,8 @@ github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.0.0-20250508142012-
 github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.0.0-20250508142012-e92225d73d9f/go.mod h1:nR/WSSMGqTexjnNksxNYTr+jUSM57NuthaloRpiPvi0=
 github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.0.0-20250508142033-f62ad55b81e4 h1:lkMKy0hoRk5is2TVgx6bOHlcNbuGKSRNfZ9CMwnKcCE=
 github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.0.0-20250508142033-f62ad55b81e4/go.mod h1:25tiS6qRd9ELIUgPVM4twjHQ3o68RzlEVcOuUUFElF4=
-github.com/netcracker/qubership-core-lib-go/v3 v3.0.0-20250513173212-f9911835b86e h1:cw1zCw34Rj/Ss6gc5PJ28IS/TmicKv88GZxFKGeXs0E=
-github.com/netcracker/qubership-core-lib-go/v3 v3.0.0-20250513173212-f9911835b86e/go.mod h1:1EKZPAtxng7sFKRm+MjnsQ4wJfe1+/zxjuhli6kIRLQ=
+github.com/netcracker/qubership-core-lib-go/v3 v3.1.0 h1:lCPMYkBTjEYJ2H0zGMa31nFiLlwdxNGpnpUaZ8O5Elk=
+github.com/netcracker/qubership-core-lib-go/v3 v3.1.0/go.mod h1:KsApx/jBB+RLvZTNh9mWoDiMR8N+YxTd54Eq3F/WZa4=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.1 h1:y0fUlFfIZhPF1W537XOLg0/fcx6zcHCJwooC2xJA040=
