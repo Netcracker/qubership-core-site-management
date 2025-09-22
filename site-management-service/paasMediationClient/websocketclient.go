@@ -39,16 +39,7 @@ func init() {
 }
 
 func CreateWebSocketClient(ctx context.Context, channel *chan []byte, host, namespace, resource string) {
-	loggerWS.InfoC(ctx, "Create new web socket client for host '%s', namespace '%s', resource '%s'", host, namespace, resource)
-	client := &WebSocketClient{
-		bus:               *channel,
-		namespace:         namespace,
-		resource:          resource,
-		websocketExecutor: &defaultWebsocketExecutor{},
-	}
-	u := url.URL{Scheme: "ws", Host: host, Path: client.generatePath()}
-
-	go client.initWebsocketClient(ctx, u)
+	CreateWebSocketClientWithAdapter(ctx, channel, host, namespace, resource, nil)
 }
 
 func CreateWebSocketClientWithAdapter(ctx context.Context, channel *chan []byte, host, namespace, resource string, adapter Adapter) {
