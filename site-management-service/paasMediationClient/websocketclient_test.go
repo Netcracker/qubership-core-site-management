@@ -231,6 +231,7 @@ func TestCreateWebSocketClientWithAdapter_DuplicatesMessages(t *testing.T) {
 		websocketExecutor: &fakeExecutor,
 		resource:          httpRoutesString,
 		namespace:         "test-namespace",
+		bus:               make(chan []byte, 50),
 		adapter: func(b []byte) ([][]byte, error) {
 			// Duplicate message to simulate adapter splitting logic
 			return [][]byte{b, b}, nil
