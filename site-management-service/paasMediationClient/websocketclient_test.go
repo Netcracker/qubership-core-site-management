@@ -5,15 +5,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/gorilla/websocket"
-	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
-	. "github.com/smarty/assertions"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
+	. "github.com/smarty/assertions"
+	"github.com/stretchr/testify/assert"
 )
 
 type fakeWebsocketExecutor struct {

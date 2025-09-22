@@ -3,14 +3,17 @@ package paasMediationClient
 import (
 	"context"
 	"encoding/json"
-	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
-	. "github.com/smarty/assertions"
-	"github.com/stretchr/testify/assert"
-	"github.com/valyala/fasthttp"
 	"net/url"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
+	. "github.com/smarty/assertions"
+	"github.com/stretchr/testify/assert"
+	"github.com/valyala/fasthttp"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 type (
@@ -294,6 +297,91 @@ func TestFilterRequiredConfigMaps(t *testing.T) {
 	assert.True(t, FilterRequiredConfigMaps("tenant-manager-configs"))
 	assert.True(t, FilterRequiredConfigMaps("baseline-version"))
 	assert.False(t, FilterRequiredConfigMaps("junk-config-map"))
+}
+
+func strPtr(s string) *string               { return &s }
+func portPtr(i int32) *gatewayv1.PortNumber { p := gatewayv1.PortNumber(i); return &p }
+
+func TestConvertHTTPRoutes_BasicAndEdgeCases(t *testing.T) {
+	r := gatewayv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        "http-one",
+			Namespace:   "ns",
+			Annotations: map[string]string{"a": "b"},
+		},
+		Spec: gatewayv1.HTTPRouteSpec{
+			Hostnames: []gatewayv1.Hostname{"host.example"},
+			Rules: []gatewayv1.HTTPRouteRule{
+				{
+					Matches: []gatewayv1.HTTPRouteMatch{
+						{Path: &gatewayv1.HTTPPathMatch{Value: strPtr("/foo")}},
+					},
+					BackendRefs: []gatewayv1.HTTPBackendRef{
+						{BackendRef: gatewayv1.BackendRef{BackendObjectReference: gatewayv1.BackendObjectReference{Name: "svc-a", Port: portPtr(8080)}}},
+						{BackendRef: gatewayv1.BackendRef{BackendObjectReference: gatewayv1.BackendObjectReference{Name: "svc-b"}}},
+					},
+				},
+			},
+		},
+	}
+
+	rNoHost := gatewayv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{Name: "http-two", Namespace: "ns"},
+		Spec: gatewayv1.HTTPRouteSpec{
+			Rules: []gatewayv1.HTTPRouteRule{{
+				Matches:     []gatewayv1.HTTPRouteMatch{{}},
+				BackendRefs: []gatewayv1.HTTPBackendRef{{BackendRef: gatewayv1.BackendRef{BackendObjectReference: gatewayv1.BackendObjectReference{Name: "svc-c", Port: portPtr(80)}}}},
+			}},
+		},
+	}
+
+	got := convertHTTPRoutes([]gatewayv1.HTTPRoute{r, rNoHost})
+
+	assert.Equal(t, 3, len(got))
+
+	assert.Equal(t, "host.example", got[0].Spec.Host)
+	assert.Equal(t, "/foo", got[0].Spec.Path)
+	assert.Equal(t, "svc-a", got[0].Spec.Service.Name)
+	assert.Equal(t, int32(8080), got[0].Spec.Port.TargetPort)
+	assert.Equal(t, "http-one", got[0].Metadata.Name)
+	assert.Equal(t, "ns", got[0].Metadata.Namespace)
+	assert.Equal(t, "b", got[0].Metadata.Annotations["a"])
+
+	assert.Equal(t, "svc-b", got[1].Spec.Service.Name)
+	assert.Equal(t, int32(8080), got[1].Spec.Port.TargetPort)
+
+	assert.Equal(t, "", got[2].Spec.Host)
+	assert.Equal(t, "svc-c", got[2].Spec.Service.Name)
+	assert.Equal(t, int32(80), got[2].Spec.Port.TargetPort)
+}
+
+func TestConvertGRPCRoutes_Basic(t *testing.T) {
+	gr := gatewayv1.GRPCRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "grpc-one",
+			Namespace: "ns",
+		},
+		Spec: gatewayv1.GRPCRouteSpec{
+			Hostnames: []gatewayv1.Hostname{"api.example"},
+			Rules: []gatewayv1.GRPCRouteRule{
+				{
+					BackendRefs: []gatewayv1.GRPCBackendRef{
+						{BackendRef: gatewayv1.BackendRef{BackendObjectReference: gatewayv1.BackendObjectReference{Name: "svc-x", Port: portPtr(9090)}}},
+					},
+				},
+			},
+		},
+	}
+
+	got := convertGRPCRoutes([]gatewayv1.GRPCRoute{gr})
+
+	assert.Equal(t, 1, len(got))
+	assert.Equal(t, "api.example", got[0].Spec.Host)
+	assert.Equal(t, "/", got[0].Spec.Path)
+	assert.Equal(t, "svc-x", got[0].Spec.Service.Name)
+	assert.Equal(t, int32(9090), got[0].Spec.Port.TargetPort)
+	assert.Equal(t, "grpc-one", got[0].Metadata.Name)
+	assert.Equal(t, "ns", got[0].Metadata.Namespace)
 }
 
 func updateCacheWithPanic(ctx context.Context, i interface{}) {

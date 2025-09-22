@@ -21,6 +21,8 @@ import (
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
 	"github.com/valyala/fasthttp"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 type (
@@ -78,8 +80,8 @@ type RoutesCallback func(context.Context, *PaasMediationClient, RouteUpdate) err
 
 const (
 	routesString             string = "routes"
-	httpRoutesString         string = "gateway/httproutes"
-	grpcRoutesString         string = "gateway/grpcroutes"
+	httpRoutesString         string = "gateways/httproutes"
+	grpcRoutesString         string = "gateways/grpcroutes"
 	configmapsString         string = "configmaps"
 	servicesString           string = "services"
 	ProjectTypeConfigMapName string = "baseline-version"
@@ -90,6 +92,36 @@ const (
 	period                          = 5 * time.Second
 	sleepWs                         = 2 * time.Minute
 	sleepInit                       = 1 * time.Second
+)
+
+var httpRouteAdapter = makeRouteAdapter(
+	func(data []byte) (*gatewayv1.HTTPRoute, error) {
+		var r gatewayv1.HTTPRoute
+		return &r, json.Unmarshal(data, &r)
+	},
+	func(routes []gatewayv1.HTTPRoute) []domain.Route {
+		converted := convertHTTPRoutes(routes)
+		res := make([]domain.Route, len(converted))
+		for i := range converted {
+			res[i] = converted[i]
+		}
+		return res
+	},
+)
+
+var grpcRouteAdapter = makeRouteAdapter(
+	func(data []byte) (*gatewayv1.GRPCRoute, error) {
+		var r gatewayv1.GRPCRoute
+		return &r, json.Unmarshal(data, &r)
+	},
+	func(routes []gatewayv1.GRPCRoute) []domain.Route {
+		converted := convertGRPCRoutes(routes)
+		res := make([]domain.Route, len(converted))
+		for i := range converted {
+			res[i] = converted[i]
+		}
+		return res
+	},
 )
 
 var logger logging.Logger
@@ -341,20 +373,126 @@ func syncingCacheInternal(ctx context.Context, cb CommonUpdateStr, sleepWs time.
 	panic("Used all attempts to read channel")
 }
 
-func (c *PaasMediationClient) getRoutesWithoutCache(ctx context.Context, namespace string) (*[]domain.Route, error) {
+func (c *PaasMediationClient) getRoutesWithoutCache(ctx context.Context, namespace string) ([]domain.Route, error) {
 	logger.InfoC(ctx, "Get list of routes from namespace %s", namespace)
 	buildUrl, err := c.buildUrl(ctx, namespace, routesString, "")
 	if err != nil {
 		logger.ErrorC(ctx, "Error occurred while building route list url: %+v", err)
 		return nil, err
 	}
-	var routeList = new([]domain.Route)
+	routeList := new([]domain.Route)
 	err = c.performRequestWithRetry(ctx, buildUrl, fasthttp.MethodGet, nil, fasthttp.StatusOK, routeList)
 	if err != nil {
 		return nil, err
 	}
+
+	buildUrl, err = c.buildUrl(ctx, namespace, httpRoutesString, "")
+	if err != nil {
+		logger.ErrorC(ctx, "Error occurred while building http route list url: %+v", err)
+		return nil, err
+	}
+	httpRouteList := make([]gatewayv1.HTTPRoute, 0)
+	err = c.performRequestWithRetry(ctx, buildUrl, fasthttp.MethodGet, nil, fasthttp.StatusOK, &httpRouteList)
+	if err != nil {
+		return nil, err
+	}
+	allRoutes := append(*routeList, convertHTTPRoutes(httpRouteList)...)
+
+	buildUrl, err = c.buildUrl(ctx, namespace, grpcRoutesString, "")
+	if err != nil {
+		logger.ErrorC(ctx, "Error occurred while building grpc route list url: %+v", err)
+		return nil, err
+	}
+
+	grpcRouteList := make([]gatewayv1.GRPCRoute, 0)
+	err = c.performRequestWithRetry(ctx, buildUrl, fasthttp.MethodGet, nil, fasthttp.StatusOK, &grpcRouteList)
+	if err != nil {
+		return nil, err
+	}
+
 	logger.InfoC(ctx, "Get routes from namespace %s was completed successfully. Got %d routes", namespace, len(*routeList))
-	return routeList, nil
+	allRoutes = append(*routeList, convertGRPCRoutes(grpcRouteList)...)
+
+	return allRoutes, nil
+}
+func buildDomainRouteFromGateway(metaObj metav1.Object, host string, path string, backendName string, targetPort int32) domain.Route {
+	return domain.Route{
+		Metadata: domain.Metadata{
+			Name:        metaObj.GetName(),
+			Namespace:   metaObj.GetNamespace(),
+			Annotations: metaObj.GetAnnotations(),
+		},
+		Spec: domain.RouteSpec{
+			Host: host,
+			Path: path,
+			Service: domain.Target{
+				Name: backendName,
+			},
+			Port: domain.RoutePort{
+				TargetPort: targetPort,
+			},
+		},
+	}
+}
+
+func convertHTTPRoutes(routes []gatewayv1.HTTPRoute) []domain.Route {
+	result := make([]domain.Route, 0)
+
+	for _, r := range routes {
+		hostnames := r.Spec.Hostnames
+		if len(hostnames) == 0 {
+			hostnames = []gatewayv1.Hostname{""}
+		}
+
+		for _, rule := range r.Spec.Rules {
+			for _, match := range rule.Matches {
+				var path string
+				if match.Path != nil && match.Path.Value != nil {
+					path = *match.Path.Value
+				}
+
+				for _, backend := range rule.BackendRefs {
+					for _, host := range hostnames {
+						var tp int32
+						if backend.Port != nil {
+							tp = int32(*backend.Port)
+						} else {
+							tp = 8080
+						}
+
+						result = append(result, buildDomainRouteFromGateway(r.GetObjectMeta(), string(host), path, string(backend.Name), tp))
+					}
+				}
+			}
+		}
+	}
+
+	return result
+}
+
+func convertGRPCRoutes(routes []gatewayv1.GRPCRoute) []domain.Route {
+	result := make([]domain.Route, 0)
+
+	for _, r := range routes {
+		hostnames := r.Spec.Hostnames
+		if len(hostnames) == 0 {
+			hostnames = []gatewayv1.Hostname{""}
+		}
+
+		for _, rule := range r.Spec.Rules {
+			for _, backend := range rule.BackendRefs {
+				for _, host := range hostnames {
+					var tp int32
+					if backend.Port != nil {
+						tp = int32(*backend.Port)
+					}
+					result = append(result, buildDomainRouteFromGateway(r.GetObjectMeta(), string(host), "/", string(backend.Name), tp))
+				}
+			}
+		}
+	}
+
+	return result
 }
 
 // Build paas mediation url.
@@ -444,8 +582,8 @@ func (c *PaasMediationClient) GetRoutes(ctx context.Context, namespace string) (
 		logger.WarnC(ctx, "Namespace %s was not found in cache, trying to get routes from paas-mediation service", namespace)
 		c.cache.routesCache.mutex.RUnlock()
 		CreateWebSocketClient(ctx, &c.cache.routesCache.bus, c.InternalGatewayAddress.Host, namespace, routesString)
-		CreateWebSocketClient(ctx, &c.cache.routesCache.bus, c.InternalGatewayAddress.Host, namespace, httpRoutesString)
-		CreateWebSocketClient(ctx, &c.cache.routesCache.bus, c.InternalGatewayAddress.Host, namespace, grpcRoutesString)
+		CreateWebSocketClientWithAdapter(ctx, &c.cache.routesCache.bus, c.InternalGatewayAddress.Host, namespace, httpRoutesString, httpRouteAdapter)
+		CreateWebSocketClientWithAdapter(ctx, &c.cache.routesCache.bus, c.InternalGatewayAddress.Host, namespace, grpcRoutesString, grpcRouteAdapter)
 		for i := 0; ; i++ {
 			time.Sleep(sleepInit)
 			c.cache.routesCache.mutex.RLock()
@@ -479,10 +617,10 @@ func (c *PaasMediationClient) initRoutesMapInCache(ctx context.Context, namespac
 
 		initialNamespace := make(map[string]domain.Route)
 		c.cache.routesCache.routes[namespace] = &initialNamespace
-		for _, route := range *routes {
+		for _, route := range routes {
 			(*c.cache.routesCache.routes[namespace])[route.Metadata.Name] = route
 		}
-		logger.InfoC(ctx, "Return %d routes of namespace %s", len(*routes), namespace)
+		logger.InfoC(ctx, "Return %d routes of namespace %s", len(routes), namespace)
 	} else {
 		logger.ErrorC(ctx, "Error occurred while getting routes from paas-mediation: %s", err.Error())
 	}
@@ -915,14 +1053,14 @@ func (c *PaasMediationClient) initRoutesCache(ctx context.Context, ch chan *Rout
 		logger.ErrorC(ctx, "Failed to initialize cache of openshift routes: %s", err)
 		panic(err)
 	}
-	for _, route := range *routes {
+	for _, route := range routes {
 		(*initialRoutes[c.Namespace])[route.Metadata.Name] = route
 	}
 
 	channel := make(chan []byte, 50)
 	CreateWebSocketClient(ctx, &channel, c.InternalGatewayAddress.Host, c.Namespace, routesString)
-	CreateWebSocketClient(ctx, &channel, c.InternalGatewayAddress.Host, c.Namespace, httpRoutesString)
-	CreateWebSocketClient(ctx, &channel, c.InternalGatewayAddress.Host, c.Namespace, grpcRoutesString)
+	CreateWebSocketClientWithAdapter(ctx, &channel, c.InternalGatewayAddress.Host, c.Namespace, httpRoutesString, httpRouteAdapter)
+	CreateWebSocketClientWithAdapter(ctx, &channel, c.InternalGatewayAddress.Host, c.Namespace, grpcRoutesString, grpcRouteAdapter)
 
 	routesCache := RoutesCache{
 		mutex:     newMutex,
@@ -995,4 +1133,47 @@ func (c *PaasMediationClient) GetLastCacheUpdateTime() time.Time {
 // for compatibility with old kubernetes
 func routeHostToLowerCase(route *domain.Route) {
 	route.Spec.Host = strings.ToLower(route.Spec.Host)
+}
+
+func extractObjectPayload(jsonVal []byte) (string, []byte, error) {
+	var data map[string]interface{}
+	err := json.Unmarshal(jsonVal, &data)
+	if err != nil {
+		return "", nil, err
+	}
+
+	objectJson, err := json.Marshal(data["object"])
+	if err != nil {
+		return "", nil, err
+	}
+	return data["type"].(string), objectJson, nil
+}
+
+func makeRouteAdapter[T any](unmarshalFn func([]byte) (*T, error), convertFn func([]T) []domain.Route) func([]byte) ([][]byte, error) {
+	return func(t []byte) ([][]byte, error) {
+		opType, objectPayload, err := extractObjectPayload(t)
+		if err != nil {
+			return nil, err
+		}
+
+		route, err := unmarshalFn(objectPayload)
+		if err != nil {
+			return nil, err
+		}
+
+		convertedRoutes := convertFn([]T{*route})
+
+		messages := make([][]byte, len(convertedRoutes))
+		for i, route := range convertedRoutes {
+			message, err := json.Marshal(RouteUpdate{
+				Type:        opType,
+				RouteObject: route,
+			})
+			if err != nil {
+				return nil, err
+			}
+			messages[i] = message
+		}
+		return messages, nil
+	}
 }
