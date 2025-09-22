@@ -127,6 +127,50 @@ func TestReconnectWebSocketClient(t *testing.T) {
 	})
 }
 
+func TestCreateWebSocketClientWithAdapter_DuplicatesMessages(t *testing.T) {
+	fakeExecutor := fakeWebsocketExecutor{}
+	webSocketClient := WebSocketClient{
+		websocketExecutor: &fakeExecutor,
+		resource:          httpRoutesString,
+		namespace:         "test-namespace",
+		bus:               make(chan []byte, 50),
+		adapter: func(b []byte) ([][]byte, error) {
+			// Duplicate message to simulate adapter splitting logic
+			return [][]byte{b, b}, nil
+		},
+	}
+	fakeExecutor.handler = http.HandlerFunc(createRouteHandler)
+	go webSocketClient.initWebsocketClient(context.Background(), url.URL{Scheme: "ws", Host: "localhost:8080", Path: webSocketClient.generatePath()})
+
+	// First message must be init signal
+	select {
+	case <-time.After(3 * time.Second):
+		t.Fatal("init signal not received")
+	case result := <-webSocketClient.bus:
+		var commonUpdate = new(CommonUpdate)
+		if err := json.Unmarshal(result, commonUpdate); err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, updateTypeInit, commonUpdate.Type)
+		assert.Equal(t, domain.CommonObject{Metadata: domain.Metadata{Namespace: "test-namespace"}}, commonUpdate.CommonObject)
+	}
+
+	// Next two messages should be duplicated by adapter
+	for i := 0; i < 2; i++ {
+		select {
+		case <-time.After(3 * time.Second):
+			t.Fatalf("expected adapted message %d not received", i+1)
+		case result := <-webSocketClient.bus:
+			var routeUpdate = new(RouteUpdate)
+			if err := json.Unmarshal(result, routeUpdate); err != nil {
+				t.Fatal(err)
+			}
+			assert.Equal(t, updateTypeAdded, routeUpdate.Type)
+			assert.Equal(t, domain.Route{Metadata: domain.Metadata{Name: "test-route", Namespace: "test-namespace"}}, routeUpdate.RouteObject)
+		}
+	}
+}
+
 func createRouteHandler(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Get request on websocket connect")
 	upgrader := websocket.Upgrader{}
