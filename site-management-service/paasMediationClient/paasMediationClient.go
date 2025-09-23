@@ -80,8 +80,8 @@ type RoutesCallback func(context.Context, *PaasMediationClient, RouteUpdate) err
 
 const (
 	routesString             string = "routes"
-	httpRoutesString         string = "gateways/httproutes"
-	grpcRoutesString         string = "gateways/grpcroutes"
+	httpRoutesString         string = "gateway/httproutes"
+	grpcRoutesString         string = "gateway/grpcroutes"
 	configmapsString         string = "configmaps"
 	servicesString           string = "services"
 	ProjectTypeConfigMapName string = "baseline-version"
