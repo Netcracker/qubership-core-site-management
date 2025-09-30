@@ -92,7 +92,7 @@ func init() {
 }
 
 // actualizeTenantStatus actualizes tenant status if necessary.
-// This is a hack for Composite Platform in case SM in Composite Platform satellites
+// This is a solution for Composite Platform in case SM in Composite Platform satellites
 // don't get notified about tenant status changes.
 func (s *Synchronizer) actualizeTenantStatus(ctx context.Context, tenant *domain.TenantDns, active bool) error {
 	if tenant.Active != active {
