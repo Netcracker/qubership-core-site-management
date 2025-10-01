@@ -3,6 +3,14 @@ package lib
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
+	"os"
+	"os/signal"
+	"sync/atomic"
+	"syscall"
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/netcracker/qubership-core-lib-go-actuator-common/v2/health"
 	"github.com/netcracker/qubership-core-lib-go-actuator-common/v2/tracing"
@@ -28,13 +36,6 @@ import (
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/synchronizer"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
-	"net/http"
-	"net/url"
-	"os"
-	"os/signal"
-	"sync/atomic"
-	"syscall"
-	"time"
 )
 
 const microservice_namespace = "microservice.namespace"
