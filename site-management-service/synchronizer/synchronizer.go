@@ -753,7 +753,7 @@ func (s *Synchronizer) generateShoppingRoute(ctx context.Context, domainName, te
 	return domain.AddressList{domain.Address(shoppingUrl.String())}
 }
 
-// Returns services marked by annotation key "qubership.cloud/tenant.service.alias.prefix" as public
+// Returns services marked by annotation key "netcracker.cloud/tenant.service.alias.prefix" as public
 func (s *Synchronizer) GetPublicServices(ctx context.Context, namespaces []string) (*[]mdomain.Service, error) {
 	filter := func(service *mdomain.Service) bool {
 		_, ok := serviceloader.MustLoad[utils2.AnnotationMapper]().Find(service.Metadata.Annotations, "tenant.service.alias.prefix")
