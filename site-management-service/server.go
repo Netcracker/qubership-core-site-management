@@ -12,7 +12,7 @@ import (
 func init() {
 	serviceloader.Register(1, &idp.DummyRetryableClient{})
 	serviceloader.Register(1, &security.DummyToken{})
-	serviceloader.Register(1, utils.NewResourceGroupAnnotationsMapper("qubership.cloud"))
+	serviceloader.Register(1, utils.NewResourceGroupAnnotationsMapper("netcracker.cloud"))
 	serviceloader.Register(1, &fiberSec.DummyFiberServerSecurityMiddleware{})
 }
 

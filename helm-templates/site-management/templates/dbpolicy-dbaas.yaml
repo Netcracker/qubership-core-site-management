@@ -1,4 +1,4 @@
-apiVersion: core.qubership.org/v1
+apiVersion: core.netcracker.com/v1
 kind: DBaaS
 subKind: DbPolicy
 metadata:
@@ -9,6 +9,6 @@ metadata:
     app.kubernetes.io/part-of: "{{ .Values.APPLICATION_NAME }}"
     app.kubernetes.io/processed-by-operator: core-operator
     deployer.cleanup/allow: "true"
-    deployment.qubership.org/sessionId: "{{ .Values.DEPLOYMENT_SESSION_ID }}"
+    deployment.netcracker.com/sessionId: "{{ .Values.DEPLOYMENT_SESSION_ID }}"
 spec:
   disableGlobalPermissions: true

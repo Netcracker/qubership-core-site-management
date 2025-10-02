@@ -170,9 +170,9 @@ http://<public-gateway-url>/api/<version>/site-management/public-services
             "name": "csr-frontend",
             "namespace": "cloud-catalog-ci",
             "annotations": {
-                "qubership.cloud/tenant.service.alias.prefix": "csr-frontend",
-                "qubership.cloud/tenant.service.show.description": "Service for sales to manage and research customers",
-                "qubership.cloud/tenant.service.show.name": "Customer Sales Representative"
+                "netcracker.cloud/tenant.service.alias.prefix": "csr-frontend",
+                "netcracker.cloud/tenant.service.show.description": "Service for sales to manage and research customers",
+                "netcracker.cloud/tenant.service.show.name": "Customer Sales Representative"
             }
         },
         "spec": {
@@ -196,9 +196,9 @@ http://<public-gateway-url>/api/<version>/site-management/public-services
             "name": "customer-self-service-fe",
             "namespace": "cloud-catalog-ci",
             "annotations": {
-                "qubership.cloud/tenant.service.alias.prefix": "customer-self-service",
-                "qubership.cloud/tenant.service.show.description": "Service for customers to manage users, products, licenses",
-                "qubership.cloud/tenant.service.show.name": "Customer Self Service"
+                "netcracker.cloud/tenant.service.alias.prefix": "customer-self-service",
+                "netcracker.cloud/tenant.service.show.description": "Service for customers to manage users, products, licenses",
+                "netcracker.cloud/tenant.service.show.name": "Customer Self Service"
             }
         },
         "spec": {
