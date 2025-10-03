@@ -5,12 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/go-errors/errors"
-	"github.com/netcracker/qubership-core-lib-go/v3/logging"
-	wrappers "github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain/wrappers"
-	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
-	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
-	"github.com/valyala/fasthttp"
 	"io"
 	"net/http"
 	"net/url"
@@ -20,6 +14,13 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/go-errors/errors"
+	"github.com/netcracker/qubership-core-lib-go/v3/logging"
+	wrappers "github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain/wrappers"
+	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
+	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
+	"github.com/valyala/fasthttp"
 )
 
 type (
