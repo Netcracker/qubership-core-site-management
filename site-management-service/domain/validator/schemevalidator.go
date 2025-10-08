@@ -3,10 +3,11 @@ package validator
 import (
 	"errors"
 	"fmt"
-	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain"
 	urls "net/url"
 	"strings"
 	"unicode"
+
+	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain"
 )
 
 const (
@@ -124,7 +125,7 @@ func anyMatch(tenantId string, data []domain.TenantDns, predicate func(string, s
 	return nil
 }
 
-func validateUrl(service, url string, tenant domain.TenantDns, data []domain.TenantDns) error {
+func validateUrl(_, url string, _ domain.TenantDns, _ []domain.TenantDns) error {
 	urlToCheck := url
 	if !strings.HasPrefix(url, httpProtocol) && !strings.HasPrefix(url, httpsProtocol) {
 		urlToCheck = httpProtocol + urlToCheck

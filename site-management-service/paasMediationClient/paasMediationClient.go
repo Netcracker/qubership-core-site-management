@@ -484,6 +484,10 @@ func (c *PaasMediationClient) initRoutesMapInCache(ctx context.Context, namespac
 	}
 }
 
+func (c *PaasMediationClient) GetNamespace() string {
+	return c.Namespace
+}
+
 func (c *PaasMediationClient) GetServices(ctx context.Context, namespace string) (*[]domain.Service, error) {
 	if namespace == "" {
 		namespace = c.Namespace

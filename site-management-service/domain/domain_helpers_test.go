@@ -19,7 +19,7 @@ func TestAddressHostAndPath(t *testing.T) {
 func TestFlattenAddressesToHosts(t *testing.T) {
 	tnt := &TenantDns{Sites: Sites{"default": {"svc": {Address("https://h/p")}}}}
 	tnt.FlattenAddressesToHosts()
-	if tnt.Sites["default"]["svc"][0] != Address("h") {
+	if tnt.Sites["default"]["svc"][0] != "h" {
 		t.Fatalf("expected host only")
 	}
 }

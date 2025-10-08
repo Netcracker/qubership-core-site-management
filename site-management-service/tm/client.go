@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/go-errors/errors"
 	pgdbaas "github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/dao/pg"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
 	"github.com/valyala/fasthttp"
-	"sync"
-	"time"
 )
 
 var tenantManagerPath = "http://internal-gateway-service:8080/api/v4/tenant-manager"
@@ -123,7 +124,7 @@ func (c *Client) GetAllTenantsByStatus(ctx context.Context, status string) (*[]T
 		return nil, err
 	}
 	defer fasthttp.ReleaseResponse(resp)
-	tenants := []Tenant{}
+	var tenants []Tenant
 	decoder := json.NewDecoder(bytes.NewReader(resp.Body()))
 	if err := decoder.Decode(&tenants); err != nil {
 		logger.ErrorC(ctx, "Error occurred while marshalling response body into tenant: %s", err.Error())
