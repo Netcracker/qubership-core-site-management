@@ -3,6 +3,12 @@ package lib
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
+	"os"
+	"sync/atomic"
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/netcracker/qubership-core-lib-go-actuator-common/v2/health"
 	"github.com/netcracker/qubership-core-lib-go-actuator-common/v2/tracing"
@@ -22,19 +28,14 @@ import (
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/dao/pg"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/docs"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/http/rest"
+	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/http/websocket"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/idp"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/messaging"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/migration"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/synchronizer"
+	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/tm"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
-	"net/http"
-	"net/url"
-	"os"
-	"os/signal"
-	"sync/atomic"
-	"syscall"
-	"time"
 )
 
 const microservice_namespace = "microservice.namespace"
@@ -111,7 +112,18 @@ func RunService() {
 	idpFacade := idp.NewFacade(namespace, serviceloader.MustLoad[idp.RetryableClient](), logging.GetLogger("idp-facade"))
 
 	logger.InfoC(ctx, "Start routes synchronizer...")
-	sync := synchronizer.New(routerDao, pmClient, mailSender, configloader.GetKoanf().Duration("synchronizer.interval"), platformHostname, pgClient, idpFacade, isCompositeSatellite, baselineSM)
+	sync := synchronizer.New(routerDao,
+		pmClient,
+		tm.NewClient(pgClient, websocket.NewConnector(), 10*time.Second),
+		mailSender,
+		configloader.GetKoanf().Duration("synchronizer.interval"),
+		platformHostname,
+		pgClient,
+		idpFacade,
+		isCompositeSatellite,
+		baselineSM,
+		configloader.GetKoanf().String("tenant.default.domain.zone"),
+		configloader.GetKoanf().String("service.url.default.proto"))
 
 	logger.InfoC(ctx, "Force initial route sync...")
 	sync.Sync(ctx)
@@ -195,28 +207,13 @@ func RunService() {
 	os.Exit(int(exitCode.Load()))
 }
 
-func registerShutdownHook(hook func()) {
-	go func() {
-		sigint := make(chan os.Signal, 1)
-
-		// interrupt signal sent from terminal
-		signal.Notify(sigint, os.Interrupt)
-		// sigterm signal sent from kubernetes
-		signal.Notify(sigint, syscall.SIGTERM)
-
-		//logger.Info("OS signal '%s' received, starting shutdown", (<-sigint).String())
-
-		hook()
-	}()
-}
-
 func getGatewayUrl() (*url.URL, error) {
 	return url.Parse(configloader.GetOrDefaultString("apigateway.internal.url", constants.DefaultHttpGatewayUrl))
 }
 
 // added in order to save backport compatibility with releases 6.42 and below
 // initially classifier in site-management was created in wrong way
-func createSiteManagementClassifier(ctx context.Context) map[string]interface{} {
+func createSiteManagementClassifier(_ context.Context) map[string]interface{} {
 	classifier := make(map[string]interface{})
 	classifier["microserviceName"] = configloader.GetKoanf().MustString("microservice.name")
 	classifier["scope"] = "service"

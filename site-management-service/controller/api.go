@@ -2,17 +2,18 @@ package controller
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"net/http"
+	"strings"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/exceptions"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/idp"
 	mdomain "github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
-	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/synchronizer"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/tm"
-	"net/http"
-	"strings"
 )
 
 const (
@@ -30,8 +31,35 @@ const (
 	Async           = "async"
 )
 
+//go:generate mockgen -source=api.go -destination=mock/api.go
+type Synchronizer interface {
+	GetSite(ctx context.Context, externalId string, url string, mergeGeneral bool, generateDefault bool) (string, error)
+	GetServiceName(ctx context.Context, externalId string) (string, error)
+	RegisterTenant(ctx context.Context, tenant tm.Tenant) error
+	GetRealms(ctx context.Context, showAll bool) (*domain.Realms, error)
+	GetRealm(ctx context.Context, realmId string) (*domain.Realm, error)
+	FindAllWithGeneral(ctx context.Context, mergeGeneral bool) (*[]domain.TenantDns, error)
+	CheckCollisions(ctx context.Context, data domain.TenantDns) (domain.ValidationResult, error)
+	FindByTenantId(ctx context.Context, tenantId, tenantSite string, mergeGeneral, generateDefault bool) (*domain.TenantDns, error)
+	AwaitAction(ctx context.Context, async bool, function func() error) error
+	FindByExternalTenantId(ctx context.Context, externalId, tenantSite string, mergeGeneral, generateDefault bool) (*domain.TenantDns, error)
+	Upsert(ctx context.Context, data domain.TenantDns) error
+	ChangeTenantStatus(ctx context.Context, tenantId string, active bool) error
+	DeleteRoutes(ctx context.Context, tenantId string) error
+	Sync(ctx context.Context)
+	GetOpenShiftRoutes(ctx context.Context, params map[string][]string) (*[]mdomain.Route, error)
+	GetAnnotatedRoutesBulk(ctx context.Context, data *[]*domain.TenantData) (*[]*domain.TenantData, error)
+	GetIdpRouteForTenant(ctx context.Context, data *domain.TenantData) ([]mdomain.CustomService, error)
+	GetAnnotatedRoutesForTenant(ctx context.Context, data *domain.TenantData) (*[]mdomain.CustomService, error)
+	GetPublicServices(ctx context.Context, namespaces []string) (*[]mdomain.Service, error)
+	DeleteTenant(ctx context.Context, tenantId string) error
+	SendRoutesToIDP(ctx context.Context) error
+	FindAll(ctx context.Context) (*[]domain.TenantDns, error)
+	GetAnnotatedRoutes(ctx context.Context, data *domain.TenantData, scheme *domain.TenantDns) (*[]mdomain.CustomService, error)
+}
+
 type ApiHttpHandler struct {
-	Synchronizer *synchronizer.Synchronizer
+	Synchronizer Synchronizer
 	IDPClient    idp.RetryableClient
 }
 
@@ -360,7 +388,7 @@ func (v *ApiHttpHandler) Upsert(c *fiber.Ctx) error {
 	if value := c.Query(Async, "true"); value == "false" {
 		async = false
 	}
-	logger.Infof("value %s", async)
+	logger.Infof("value %t", async)
 	logger.DebugC(context, "Flattening addresses (urls to hosts)")
 	// need to convert any address with url value (with scheme and path) to host only string
 	data.FlattenAddressesToHosts()
@@ -719,7 +747,7 @@ func (v *ApiHttpHandler) ListPublicServices(c *fiber.Ctx) error {
 	logger.DebugC(context, "Requesting public services")
 	namespaces := make([]string, 0)
 	if value := c.Query(Namespaces); len(value) != 0 {
-		namespaces = strings.Split(string(value), ",")
+		namespaces = strings.Split(value, ",")
 	}
 	if services, err := v.Synchronizer.GetPublicServices(context, namespaces); err == nil {
 		return respondWithJson(c, http.StatusOK, services)

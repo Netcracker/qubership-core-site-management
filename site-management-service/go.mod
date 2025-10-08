@@ -3,6 +3,7 @@ module github.com/netcracker/qubership-core-site-management/site-management-serv
 go 1.25.1
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-errors/errors v1.5.1
 	github.com/gofiber/fiber/v2 v2.52.9
@@ -22,8 +23,10 @@ require (
 	github.com/testcontainers/testcontainers-go v0.39.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.39.0
 	github.com/uptrace/bun v1.2.15
+	github.com/uptrace/bun/dialect/pgdialect v1.2.15
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/valyala/fasthttp v1.66.0
+	go.uber.org/mock v0.6.0
 	sigs.k8s.io/yaml v1.6.0
 )
 
@@ -126,7 +129,6 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
-	github.com/uptrace/bun/dialect/pgdialect v1.2.15 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/vibrantbyte/go-antpath v1.1.1 // indirect
 	github.com/viney-shih/go-lock v1.1.2 // indirect

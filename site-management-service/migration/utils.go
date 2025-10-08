@@ -10,8 +10,7 @@ import (
 )
 
 var (
-	relationDoesNotExistCode = "42P01"
-	migrations               = migrate.NewMigrations()
+	migrations = migrate.NewMigrations()
 	// check name of tables of migrations and locks in migrator.NewMigrator
 	bunMigrationsTable     = "bun_migrations"
 	bunLockMigrationTable  = "bun_migration_locks"

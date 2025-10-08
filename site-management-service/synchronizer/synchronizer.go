@@ -3,7 +3,17 @@ package synchronizer
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math/rand"
+	"net/http"
+	"net/url"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+	"unicode"
+
 	pgdbaas "github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4"
 	"github.com/netcracker/qubership-core-lib-go/v3/configloader"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
@@ -15,22 +25,14 @@ import (
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain/validator"
 	wrappers "github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain/wrappers"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/exceptions"
-	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/http/websocket"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/messaging"
 	pmClient "github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient"
 	mdomain "github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
+	pmClientDomain "github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/tm"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
-	"math/rand"
-	"net/http"
-	"net/url"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
-	"unicode"
 
-	"github.com/go-errors/errors"
+	gerrors "github.com/go-errors/errors"
 	"github.com/valyala/fasthttp"
 )
 
@@ -41,19 +43,52 @@ const (
 	nameMaxLength        = 63
 	shoppingFrontendName = "shopping-frontend"
 	defaultNamespace     = "default"
-	dmp                  = "dmp"
 	tenantPrefix         = "tenant-"
 )
 
+//go:generate mockgen -source=synchronizer.go -destination=mock/synchronizer.go
 type (
 	syncEvent struct{}
 
 	RoutesGetter   func(ctx context.Context, namespace string, filter func(*mdomain.Route) bool) (*[]mdomain.Route, error)
 	ServicesGetter func(ctx context.Context, namespace string, filter func(*mdomain.Service) bool) (*[]mdomain.Service, error)
 
+	paasMediationClient interface {
+		GetRoutes(ctx context.Context, namespace string) (*[]pmClientDomain.Route, error)
+		GetNamespace() string
+		GetConfigMaps2(ctx context.Context, namespace string, filter func(*pmClientDomain.Configmap) bool) (*[]pmClientDomain.Configmap, error)
+		GetRoutesByFilter(ctx context.Context, namespace string, filter func(*pmClientDomain.Route) bool) (*[]pmClientDomain.Route, error)
+		GetRoutesForNamespaces2(ctx context.Context, namespaces []string, filter func(*pmClientDomain.Route) bool) (*[]pmClientDomain.Route, error)
+		GetRoutesForNamespaces(ctx context.Context, namespaces []string) (*[]pmClientDomain.Route, error)
+		GetServices2(ctx context.Context, namespace string, filter func(*pmClientDomain.Service) bool) (*[]pmClientDomain.Service, error)
+		GetLastCacheUpdateTime() time.Time
+		AddRouteCallback(callback pmClient.RoutesCallback)
+		DeleteRoute(ctx context.Context, namespace, name string) error
+		CreateRoute(ctx context.Context, route *pmClientDomain.Route, namespace string) error
+		InitServicesMapInCache(ctx context.Context, namespace string)
+		GetServicesForNamespaces2(ctx context.Context, namespaces []string, filter func(*pmClientDomain.Service) bool) (*[]pmClientDomain.Service, error)
+		CreateService(ctx context.Context, service *pmClientDomain.Service, namespace string) error
+		UpdateOrCreateService(ctx context.Context, service *pmClientDomain.Service, namespace string) error
+		UpdateOrCreateRoute(ctx context.Context, route *pmClientDomain.Route, namespace string) error
+		DeleteService(ctx context.Context, service, namespace string) error
+		StartSyncingCache(ctx context.Context)
+	}
+
+	tmClient interface {
+		GetTenantByExternalId(ctx context.Context, externalId string) (*tm.Tenant, error)
+		GetActiveTenantsCache(ctx context.Context) []tm.Tenant
+		GetTenantByObjectId(ctx context.Context, objectId string) (*tm.Tenant, error)
+		SubscribeToAll(callback func(ctx context.Context, event tm.TenantWatchEvent) error)
+		SubscribeToAllExcept(subEventType tm.TenantWatchEventType, callback func(context.Context, tm.TenantWatchEvent) error)
+		StartWatching(ctx context.Context)
+		GetAllTenantsByStatus(ctx context.Context, status string) (*[]tm.Tenant, error)
+		UpdateActiveTenantsCache(ctx context.Context, tenants []tm.Tenant)
+		DeleteFromActiveTenantsCache(ctx context.Context, tenants []tm.Tenant)
+	}
+
 	Synchronizer struct {
 		dao                    *pg.RouteManagerDao
-		pmClient               *pmClient.PaasMediationClient
+		pmClient               paasMediationClient
 		mailSender             *messaging.MailSender
 		autoRefreshTimeout     time.Duration
 		bus                    chan syncEvent
@@ -61,7 +96,7 @@ type (
 		routesGetter           RoutesGetter
 		servicesGetter         ServicesGetter
 		defaultDomainZone      string
-		tenantClient           *tm.Client
+		tenantClient           tmClient
 		platformHostname       string
 		protocol               string
 		idpFacade              IDPFacade
@@ -190,7 +225,7 @@ func (s *Synchronizer) GetRealms(ctx context.Context, showAll bool) (*domain.Rea
 func (s *Synchronizer) SendRoutesToIDP(ctx context.Context) error {
 	commonURIs, tenantURIs, err := s.getRealms(ctx)
 	if err != nil {
-		return errors.Wrap(err, 0)
+		return gerrors.Wrap(err, 0)
 	}
 	tenantRoutes := make(map[string][]string)
 	for _, realm := range tenantURIs {
@@ -198,14 +233,14 @@ func (s *Synchronizer) SendRoutesToIDP(ctx context.Context) error {
 	}
 	err = s.idpFacade.SetRedirectURIs(ctx, tenantRoutes, commonURIs)
 	if err != nil {
-		return errors.Wrap(err, 0)
+		return gerrors.Wrap(err, 0)
 	}
 	return nil
 }
 
 func (s *Synchronizer) getRealms(ctx context.Context) ([]string, []domain.Realm, error) {
 	logger.InfoC(ctx, "Start building realms by getting openshift routes from master namespace")
-	routes, err := s.pmClient.GetRoutes(ctx, s.pmClient.Namespace) // get all routes
+	routes, err := s.pmClient.GetRoutes(ctx, s.pmClient.GetNamespace()) // get all routes
 	if err != nil {
 		logger.ErrorC(ctx, "Error occurred while getting openshift routes : %s", err.Error())
 		return nil, nil, err
@@ -227,7 +262,7 @@ func (s *Synchronizer) getRealms(ctx context.Context) ([]string, []domain.Realm,
 	// need to iterate over each active tenant and populate the list of routes for each tenant
 	tenants := s.tenantClient.GetActiveTenantsCache(ctx)
 	logger.InfoC(ctx, "Was received %d activated tenants", len(tenants))
-	resultRealms := []domain.Realm{}
+	var resultRealms []domain.Realm
 	for _, tenant := range tenants {
 		if tenant.ExternalId == "" {
 			// active tenant has empty externalId
@@ -255,7 +290,7 @@ func (s *Synchronizer) getRealms(ctx context.Context) ([]string, []domain.Realm,
 
 func (s *Synchronizer) appendCommonExternalRoutes(ctx context.Context, commonRoutes []string) ([]string, error) {
 	logger.InfoC(ctx, "Start appending common external routes by getting configmaps from namespace")
-	configmaps, err := s.pmClient.GetConfigMaps2(ctx, s.pmClient.Namespace, func(configmap *mdomain.Configmap) bool {
+	configmaps, err := s.pmClient.GetConfigMaps2(ctx, s.pmClient.GetNamespace(), func(configmap *mdomain.Configmap) bool {
 		if configmap.Metadata.Name == pmClient.TMConfigsConfigmapName {
 			return true
 		}
@@ -295,7 +330,7 @@ func (s *Synchronizer) appendTenantExternalRoutes(ctx context.Context, tenantRou
 	for tenantObjectId, routes := range *tenantRoutes {
 		tenant, err := s.tenantClient.GetTenantByObjectId(ctx, tenantObjectId)
 		if err != nil {
-			if err == tm.ErrTenantNotFound {
+			if errors.Is(err, tm.ErrTenantNotFound) {
 				logger.DebugC(ctx, "Tenant with objectId %s was not found in tenant manager. Skip searching for external routes", tenantObjectId)
 				continue
 			}
@@ -343,7 +378,7 @@ func (s *Synchronizer) GetRealm(ctx context.Context, realmId string) (*domain.Re
 	logger.InfoC(ctx, "Got %d hosts from database", len(routes))
 
 	namespaces := scheme.Namespaces
-	appendElemIfNotExists(&namespaces, s.pmClient.Namespace)
+	appendElemIfNotExists(&namespaces, s.pmClient.GetNamespace())
 
 	for _, namespace := range namespaces {
 		generalRoutes, err := s.pmClient.GetRoutesByFilter(ctx, namespace, RouteIsGeneral)
@@ -370,7 +405,7 @@ func (s *Synchronizer) FindAllWithGeneral(ctx context.Context, mergeGeneral bool
 	if scheme, err := s.dao.FindAll(ctx); err == nil {
 		logger.DebugC(ctx, "Find all result: %v", scheme)
 		namespaces := s.getAllNamespacesFromTenants(scheme)
-		appendElemIfNotExists(&namespaces, s.pmClient.Namespace)
+		appendElemIfNotExists(&namespaces, s.pmClient.GetNamespace())
 
 		if generalRoutes, err := s.pmClient.GetRoutesForNamespaces2(ctx, namespaces, RouteIsGeneral); err != nil {
 			return nil, err
@@ -399,7 +434,7 @@ func (s *Synchronizer) getAllNamespacesFromTenants(tenants *[]domain.TenantDns) 
 			}
 		}
 	}
-	appendElemIfNotExists(&namespaces, s.pmClient.Namespace)
+	appendElemIfNotExists(&namespaces, s.pmClient.GetNamespace())
 	return namespaces
 }
 
@@ -465,7 +500,7 @@ func (s *Synchronizer) FindByTenantId(ctx context.Context, tenantId, tenantSite 
 			scheme.Sites = sites
 		} else if mergeGeneral {
 			namespaces := scheme.Namespaces
-			appendElemIfNotExists(&namespaces, s.pmClient.Namespace)
+			appendElemIfNotExists(&namespaces, s.pmClient.GetNamespace())
 			if generalRoutes, err := s.pmClient.GetRoutesForNamespaces2(ctx, namespaces, RouteIsGeneral); err == nil {
 				logger.DebugC(ctx, "General routes: %v", generalRoutes)
 				scheme = domain.MergeDatabaseSchemeWithGeneralRoutes(scheme, generalRoutes)
@@ -486,7 +521,7 @@ func (s *Synchronizer) GetOpenShiftRoutes(ctx context.Context, params map[string
 	} else if name, ok := params["name"]; ok && len(name[0]) != 0 {
 		namespaces, ok := params["namespaces"]
 		if !ok {
-			namespaces = []string{s.pmClient.Namespace}
+			namespaces = []string{s.pmClient.GetNamespace()}
 		}
 		logger.DebugC(ctx, "Get openshift route with name %s and namespaces: %v", name[0], namespaces)
 		return s.getOpenShiftRoutesWithName(ctx, name[0], namespaces)
@@ -495,7 +530,7 @@ func (s *Synchronizer) GetOpenShiftRoutes(ctx context.Context, params map[string
 		return s.getOpenShiftRoutesWithNamespace(ctx, strings.Split(namespaces[0], ","))
 	} else {
 		logger.DebugC(ctx, "Get openshift routes for default namespace")
-		return s.pmClient.GetRoutes(ctx, s.pmClient.Namespace)
+		return s.pmClient.GetRoutes(ctx, s.pmClient.GetNamespace())
 	}
 }
 
@@ -608,7 +643,7 @@ func (s *Synchronizer) GetAnnotatedRoutes(ctx context.Context, data *domain.Tena
 	}
 
 	namespaces := scheme.Namespaces
-	appendElemIfNotExists(&namespaces, s.pmClient.Namespace)
+	appendElemIfNotExists(&namespaces, s.pmClient.GetNamespace())
 	routes, err := s.pmClient.GetRoutesForNamespaces2(ctx, namespaces, RouteIsGeneral)
 	if err != nil {
 		return nil, err
@@ -672,7 +707,7 @@ func (s *Synchronizer) mergeDatabaseRoutesWithGenerated(ctx context.Context, sch
 
 func (s *Synchronizer) generateDefaultRoutes(ctx context.Context, domainName, tenantName string, namespaces []string) (domain.Services, error) {
 	logger.InfoC(ctx, "Generate default routes for tenant with domainName '%s' and tenant name '%s'", domainName, tenantName)
-	appendElemIfNotExists(&namespaces, s.pmClient.Namespace)
+	appendElemIfNotExists(&namespaces, s.pmClient.GetNamespace())
 	publicServices, err := s.GetPublicServices(ctx, namespaces)
 	if err != nil {
 		return nil, err
@@ -762,7 +797,7 @@ func (s *Synchronizer) GetPublicServices(ctx context.Context, namespaces []strin
 
 	result := make([]mdomain.Service, 0)
 	if len(namespaces) == 0 {
-		namespaces = append(namespaces, s.pmClient.Namespace)
+		namespaces = append(namespaces, s.pmClient.GetNamespace())
 	}
 	for _, namespace := range namespaces {
 		raw, err := s.pmClient.GetServices2(ctx, namespace, filter)
@@ -858,7 +893,7 @@ func (s *Synchronizer) generateNewUrlsForServicesIfNecessary(ctx context.Context
 			logger.DebugC(ctx, "For tenant id '%s' found scheme: %v", data.TenantId, oldTenant)
 			if oldTenant.DomainName != data.DomainName || oldTenant.TenantName != data.TenantName {
 				namespaces := data.Namespaces
-				appendElemIfNotExists(&namespaces, s.pmClient.Namespace)
+				appendElemIfNotExists(&namespaces, s.pmClient.GetNamespace())
 
 				if oldTenant.DomainName != data.DomainName {
 					logger.InfoC(ctx, "Domain name was changed. Old value was '%s', new value is '%s'", oldTenant.DomainName, data.DomainName)
@@ -888,7 +923,7 @@ func (s *Synchronizer) getCompositeNamespaceForTenant(ctx context.Context, data 
 	var childNameSpace *domain.CompositeNamespace
 	namespaces := data.Namespaces
 	for i, namespace := range namespaces {
-		if namespace == s.pmClient.Namespace {
+		if namespace == s.pmClient.GetNamespace() {
 			if i < (len(namespaces) - 1) {
 				namespaces = append(namespaces[:i], namespaces[i+1:]...)
 			} else {
@@ -908,16 +943,16 @@ func (s *Synchronizer) getCompositeNamespaceForTenant(ctx context.Context, data 
 		if err != nil {
 			return nil, err
 		}
-		childNameSpace, err = s.resolveChildForNamespace(ctx, s.pmClient.Namespace, configmaps)
+		childNameSpace, err = s.resolveChildForNamespace(ctx, s.pmClient.GetNamespace(), configmaps)
 		if err != nil {
-			logger.ErrorC(ctx, "Error occurred while getting child namespace for '%s': %s", s.pmClient.Namespace, err.Error())
+			logger.ErrorC(ctx, "Error occurred while getting child namespace for '%s': %s", s.pmClient.GetNamespace(), err.Error())
 			return nil, err
 		}
 	}
 
 	logger.InfoC(ctx, "Composite namespace was built successfully for tenant '%s'", data.TenantId)
 	return &domain.CompositeNamespace{
-		Namespace: s.pmClient.Namespace,
+		Namespace: s.pmClient.GetNamespace(),
 		Child:     childNameSpace,
 	}, nil
 }
@@ -981,7 +1016,7 @@ func (s *Synchronizer) getConfigMapsForNamespaces(ctx context.Context, namespace
 
 func (s *Synchronizer) filterGeneralRoutes(ctx context.Context, data domain.TenantDns) (domain.TenantDns, error) {
 	namespaces := data.Namespaces
-	appendElemIfNotExists(&namespaces, s.pmClient.Namespace)
+	appendElemIfNotExists(&namespaces, s.pmClient.GetNamespace())
 	generalRoutes := make([]mdomain.Route, 0)
 	for _, namespace := range namespaces {
 		namespaceGeneralRoutes, err := s.pmClient.GetRoutesByFilter(ctx, namespace, RouteIsGeneral)
@@ -1130,7 +1165,7 @@ func (s *Synchronizer) buildSchemeIfRequired(ctx context.Context) error {
 
 func (s *Synchronizer) getScheme(ctx context.Context) (*[]domain.TenantDns, error) {
 	logger.DebugC(ctx, "It is necessary to build scheme from os routes")
-	manageableRoutes, err := s.routesGetter(ctx, s.pmClient.Namespace, IsRouteManageable)
+	manageableRoutes, err := s.routesGetter(ctx, s.pmClient.GetNamespace(), IsRouteManageable)
 	if err != nil {
 		logger.DebugC(ctx, "Error occurred while getting routes from os: %s", err.Error())
 		return nil, err
@@ -1138,9 +1173,9 @@ func (s *Synchronizer) getScheme(ctx context.Context) (*[]domain.TenantDns, erro
 	return domain.FromRoutes(manageableRoutes), nil
 }
 
-func New(dao *pg.RouteManagerDao, osClient *pmClient.PaasMediationClient, mailSender *messaging.MailSender,
+func New(dao *pg.RouteManagerDao, osClient paasMediationClient, tmClient tmClient, mailSender *messaging.MailSender,
 	autoRefreshTimeout time.Duration, platformHostname string, pgClient pgdbaas.PgClient,
-	idpClient IDPFacade, isCompositeSatellite bool, baselineSM *composite.BaselineSM) *Synchronizer {
+	idpClient IDPFacade, isCompositeSatellite bool, baselineSM *composite.BaselineSM, defaultDomainZone string, serviceProto string) *Synchronizer {
 	ctx := context.Background()
 	sync := &Synchronizer{
 		dao,
@@ -1152,16 +1187,16 @@ func New(dao *pg.RouteManagerDao, osClient *pmClient.PaasMediationClient, mailSe
 		osClient.GetRoutesByFilter,
 		osClient.GetServices2,
 		"",
-		tm.NewClient(pgClient, websocket.NewConnector(), 10*time.Second),
+		tmClient,
 		platformHostname,
 		"https",
 		idpClient,
 		isCompositeSatellite,
 		baselineSM,
 	}
-	sync.defaultDomainZone = configloader.GetKoanf().String("tenant.default.domain.zone")
-	proto := configloader.GetKoanf().String("service.url.default.proto")
-	logger.InfoC(ctx, "Read  SERVICE_URL_DEFAULT_PROTO %v", proto)
+	sync.defaultDomainZone = defaultDomainZone
+	proto := serviceProto
+	logger.InfoC(ctx, "Read SERVICE_URL_DEFAULT_PROTO %v", proto)
 	if proto == "http" {
 		logger.InfoC(ctx, "Set protocol to http")
 		sync.protocol = proto
@@ -1181,7 +1216,7 @@ func New(dao *pg.RouteManagerDao, osClient *pmClient.PaasMediationClient, mailSe
 			sync.pmClient.AddRouteCallback(func(ctx context.Context, _ *pmClient.PaasMediationClient, _ pmClient.RouteUpdate) error {
 				err := sync.SendRoutesToIDP(ctx)
 				if err != nil {
-					return errors.Wrap(err, 0)
+					return gerrors.Wrap(err, 0)
 				}
 				return nil
 			})
@@ -1281,7 +1316,7 @@ func (s *Synchronizer) upsertTenantFromTM(ctx context.Context, tenant tm.Tenant)
 		tenantFromBase, err0 := s.FindByTenantId(ctx, tenant.ObjectId, "", false, true)
 		if err0 != nil {
 			logger.InfoC(ctx, "Searching of tenant with id %v finished with error %+v", tenant.ObjectId, err0)
-			tenantToUpdate.Sites[defaultNamespace] = make(map[string]domain.AddressList, 0)
+			tenantToUpdate.Sites[defaultNamespace] = make(map[string]domain.AddressList)
 		} else {
 			logger.DebugC(ctx, "Tenant from base %+v", tenantFromBase)
 			tenantToUpdate.Sites = tenantFromBase.Sites
@@ -1290,7 +1325,7 @@ func (s *Synchronizer) upsertTenantFromTM(ctx context.Context, tenant tm.Tenant)
 
 	if err := s.Upsert(ctx, tenantToUpdate); err != nil {
 		logger.ErrorC(ctx, "Failed to upsert tenant with ObjectId %v: %v", tenant.ObjectId)
-		return errors.New(err)
+		return gerrors.New(err)
 	}
 	return nil
 }
@@ -1304,7 +1339,7 @@ func (s *Synchronizer) SyncTenantsWithTM(ctx context.Context, tenantEvent tm.Ten
 		if tenantEvent.Type == tm.EventTypeDeleted {
 			if err := s.DeleteTenant(ctx, tenantFromEvent.ObjectId); err != nil {
 				logger.ErrorC(ctx, "Failed to delete tenant with ObjectId %v: %v", tenantFromEvent.ObjectId)
-				return errors.New(err)
+				return gerrors.New(err)
 			}
 		} else {
 			return s.upsertTenantFromTM(ctx, tenantFromEvent)
@@ -1327,7 +1362,7 @@ func (s *Synchronizer) GetUpdateRedirectURIsInIDPHandler() func(context.Context,
 	return func(ctx context.Context, tenantEvent tm.TenantWatchEvent) error {
 		err := s.SendRoutesToIDP(ctx)
 		if err != nil {
-			return errors.Wrap(err, 0)
+			return gerrors.Wrap(err, 0)
 		}
 		return nil
 	}
@@ -1347,9 +1382,9 @@ func (s *Synchronizer) ActualizeActiveTenantsCache() func(context.Context, tm.Te
 }
 
 func (s *Synchronizer) GetPAASHostsWithTenantID(ctx context.Context, externalId string) ([]string, error) {
-	routes, err := s.pmClient.GetRoutesByFilter(ctx, s.pmClient.Namespace, RouteHasTenantId(externalId))
+	routes, err := s.pmClient.GetRoutesByFilter(ctx, s.pmClient.GetNamespace(), RouteHasTenantId(externalId))
 	if err != nil {
-		return nil, errors.Wrap(err, 0)
+		return nil, gerrors.Wrap(err, 0)
 	}
 	hosts := make([]string, len(*routes))
 	for i, route := range *routes {
@@ -1388,7 +1423,7 @@ func (s *Synchronizer) processSynchronization(ctx context.Context) error {
 	}
 
 	namespaces := s.getAllNamespacesFromTenants(allSettings)
-	appendElemIfNotExists(&namespaces, s.pmClient.Namespace)
+	appendElemIfNotExists(&namespaces, s.pmClient.GetNamespace())
 	manageableRoutes, err := s.pmClient.GetRoutesForNamespaces2(ctx, namespaces, IsRouteManageable)
 	if err != nil {
 		logger.ErrorC(ctx, "Error get manageable route list from openshift: %s "+fmt.Sprintf("%v", namespaces), err)
@@ -1450,7 +1485,7 @@ func (s *Synchronizer) processSynchronization(ctx context.Context) error {
 	}
 	for _, tenant := range changedTenants {
 		namespaces := tenant.Namespaces
-		appendElemIfNotExists(&namespaces, s.pmClient.Namespace)
+		appendElemIfNotExists(&namespaces, s.pmClient.GetNamespace())
 		commonRoutes, err := s.pmClient.GetRoutesForNamespaces2(ctx, namespaces, RouteIsGeneral)
 		if err != nil {
 			logger.ErrorC(ctx, "Error occurred while getting common routes %s", err)
@@ -1487,7 +1522,7 @@ func (s *Synchronizer) resolveNamespaceForService(ctx context.Context, service s
 		return namespace, nil
 	}
 
-	return "", errors.New(fmt.Sprintf("Service %s wasn't found in any namespace: %v or master namespace %s", service, compositeNamespace, s.pmClient.Namespace))
+	return "", errors.New(fmt.Sprintf("Service %s wasn't found in any namespace: %v or master namespace %s", service, compositeNamespace, s.pmClient.GetNamespace()))
 }
 
 func (s *Synchronizer) findServiceInNamespaces(ctx context.Context, service string, compositeNamespace domain.CompositeNamespace) (string, error) {
@@ -1724,7 +1759,7 @@ func (s *Synchronizer) generateUniqueServiceName(ctx context.Context, tenantName
 }
 
 func (s *Synchronizer) serviceNameAlreadyExists(ctx context.Context, serviceName string) (bool, error) {
-	services, err := s.pmClient.GetServices2(ctx, s.pmClient.Namespace, func(service *mdomain.Service) bool {
+	services, err := s.pmClient.GetServices2(ctx, s.pmClient.GetNamespace(), func(service *mdomain.Service) bool {
 		return service.Metadata.Name == serviceName
 	})
 	if err != nil {
@@ -1734,7 +1769,7 @@ func (s *Synchronizer) serviceNameAlreadyExists(ctx context.Context, serviceName
 }
 
 func (s *Synchronizer) CreateVirtualService(ctx context.Context, serviceReq domain.ServiceRegistration) error {
-	namespace := s.pmClient.Namespace
+	namespace := s.pmClient.GetNamespace()
 	route := serviceReq.ToRoute(s.platformHostname, namespace)
 	if msg, valid := serviceReq.IsRouteValid(route, namespace); !valid {
 		return wrappers.ErrorWrapper{StatusCode: http.StatusBadRequest, Message: msg}
@@ -1760,7 +1795,7 @@ func (s *Synchronizer) CreateVirtualService(ctx context.Context, serviceReq doma
 }
 
 func (s *Synchronizer) UpdateOrCreateVirtualService(ctx context.Context, serviceReq domain.ServiceRegistration) error {
-	namespace := s.pmClient.Namespace
+	namespace := s.pmClient.GetNamespace()
 	serviceName := serviceReq.VirtualService
 
 	route := serviceReq.ToRoute(s.platformHostname, namespace)
@@ -1788,7 +1823,7 @@ func (s *Synchronizer) UpdateOrCreateVirtualService(ctx context.Context, service
 		return err
 	}
 
-	routesToUpdate, err := s.pmClient.GetRoutesByFilter(ctx, s.pmClient.Namespace, func(route *mdomain.Route) bool {
+	routesToUpdate, err := s.pmClient.GetRoutesByFilter(ctx, s.pmClient.GetNamespace(), func(route *mdomain.Route) bool {
 		return route.Spec.Service.Name == serviceName
 	})
 
@@ -1828,7 +1863,7 @@ func (s *Synchronizer) UpdateOrCreateVirtualService(ctx context.Context, service
 }
 
 func (s *Synchronizer) DeleteVirtualService(ctx context.Context, serviceName string) error {
-	namespace := s.pmClient.Namespace
+	namespace := s.pmClient.GetNamespace()
 
 	services, err := s.pmClient.GetServices2(ctx, namespace, func(service *mdomain.Service) bool {
 		return IsVirtual(service.Metadata) && service.Metadata.Name == serviceName
@@ -1849,7 +1884,7 @@ func (s *Synchronizer) DeleteVirtualService(ctx context.Context, serviceName str
 		return err
 	}
 
-	routesToDelete, err := s.pmClient.GetRoutesByFilter(ctx, s.pmClient.Namespace, func(route *mdomain.Route) bool {
+	routesToDelete, err := s.pmClient.GetRoutesByFilter(ctx, s.pmClient.GetNamespace(), func(route *mdomain.Route) bool {
 		return route.Spec.Service.Name == serviceName
 	})
 
@@ -1961,7 +1996,7 @@ func appendElemIfNotExists(elems *[]string, elem string) {
 
 func getTenantRoutesFromOpenshiftRoutes(ctx context.Context, routes *[]mdomain.Route) ([]string, map[string][]string) {
 	logger.InfoC(ctx, "Get realms from openshift routes")
-	commonRoutes := []string{}
+	var commonRoutes []string
 
 	tenantRoutes := make(map[string][]string)
 	for _, route := range *routes {

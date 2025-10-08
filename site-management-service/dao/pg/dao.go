@@ -3,6 +3,9 @@ package pg
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"net/http"
+
 	pgdbaas "github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain"
@@ -10,7 +13,6 @@ import (
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/exceptions"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
 	"github.com/uptrace/bun"
-	"net/http"
 )
 
 type RouteManagerDao struct {
@@ -128,7 +130,7 @@ func (v *RouteManagerDao) Upsert(ctx context.Context, data domain.TenantDns) err
 				logger.ErrorC(ctx, "Error during Update %+v", err.Error())
 				return nil, err
 			}
-		} else if err == sql.ErrNoRows { // Insert
+		} else if errors.Is(err, sql.ErrNoRows) { // Insert
 			if _, err := db.NewInsert().Model(&data).Exec(ctx); err != nil {
 				return nil, err
 			}
@@ -168,7 +170,7 @@ func (v *RouteManagerDao) AddRouteToTenants(ctx context.Context, host, serviceNa
 					tenant.Sites = domain.Sites{}
 				}
 				if tenant.Sites["default"] == nil { // null in case of composite. ticket PSUPCLFRM-3603
-					tenant.Sites["default"] = make(map[string]domain.AddressList, 0)
+					tenant.Sites["default"] = make(map[string]domain.AddressList)
 				}
 				tenant.Sites["default"][serviceName] = append(tenant.Sites["default"][serviceName], domain.Address(host))
 				if _, err = tx.NewUpdate().Model(&tenant).WherePK().Exec(ctx); err != nil {
@@ -194,7 +196,7 @@ func (v *RouteManagerDao) DeleteRouteFromTenants(ctx context.Context, serviceNam
 				return err
 			}
 			for _, tenant := range tenants {
-				for siteName, _ := range tenant.Sites {
+				for siteName := range tenant.Sites {
 					delete(tenant.Sites[siteName], serviceName)
 					if _, err = tx.NewUpdate().Model(&tenant).WherePK().Exec(ctx); err != nil {
 						return wrappers.ErrorWrapper{StatusCode: http.StatusInternalServerError, Message: err.Error()}
