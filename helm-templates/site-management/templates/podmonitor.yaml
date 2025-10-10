@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/part-of: Cloud-Core
     app.kubernetes.io/managed-by: saasDeployer
     app.kubernetes.io/processed-by-operator: victoriametrics-operator
-    deployment.qubership.org/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
+    deployment.netcracker.com/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
 spec:
   podMetricsEndpoints:
     - interval: 30s
