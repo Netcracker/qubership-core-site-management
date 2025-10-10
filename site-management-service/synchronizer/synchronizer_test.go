@@ -3,8 +3,6 @@ package synchronizer
 import (
 	"context"
 	"fmt"
-	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
-	"github.com/netcracker/qubership-core-lib-go/v3/utils"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain"
 	pmClient "github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient"
 	mdomain "github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
@@ -128,8 +126,8 @@ var (
 		Sites: domain.Sites{
 			defaultSiteName: domain.Services{
 				oldServiceName: domain.AddressList{
-					"tenanttestqa2.backup.openshift.sdntest.qubership.org/welcome",
-					"www.tenanttestqa2.backup.openshift.sdntest.qubership.org/welcome",
+					"tenanttestqa2.backup.openshift.sdntest.netcracker.com/welcome",
+					"www.tenanttestqa2.backup.openshift.sdntest.netcracker.com/welcome",
 				},
 			},
 		},
@@ -155,10 +153,6 @@ var (
 		},
 	}
 )
-
-func init() {
-	serviceloader.Register(1, utils.NewResourceGroupAnnotationsMapper("netcracker.cloud"))
-}
 
 func TestFindServicesInNamespace(t *testing.T) {
 	sync := Synchronizer{

@@ -1,7 +1,5 @@
 package domain
 
-import "github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
-
 type Service struct {
 	Metadata Metadata    `json:"metadata"`
 	Spec     ServiceSpec `json:"spec"`
@@ -23,21 +21,41 @@ type Port struct {
 }
 
 func (s Service) GetId() string {
-	return utils.FindAnnotation(s.Metadata.Annotations, "tenant.service.id")
+	if value, ok := s.Metadata.Annotations["netcracker.cloud/tenant.service.id"]; ok {
+		return value
+	} else {
+		return ""
+	}
 }
 
 func (s Service) GetShowName() string {
-	return utils.FindAnnotation(s.Metadata.Annotations, "tenant.service.show.name")
+	if value, ok := s.Metadata.Annotations["netcracker.cloud/tenant.service.show.name"]; ok {
+		return value
+	} else {
+		return ""
+	}
 }
 
 func (s Service) GetDescription() string {
-	return utils.FindAnnotation(s.Metadata.Annotations, "tenant.service.show.description")
+	if value, ok := s.Metadata.Annotations["netcracker.cloud/tenant.service.show.description"]; ok {
+		return value
+	} else {
+		return ""
+	}
 }
 
 func (s Service) GetSuffix() string {
-	return utils.FindAnnotation(s.Metadata.Annotations, "tenant.service.url.suffix")
+	if value, ok := s.Metadata.Annotations["netcracker.cloud/tenant.service.url.suffix"]; ok {
+		return value
+	} else {
+		return ""
+	}
 }
 
 func (s Service) GetPrefix() string {
-	return utils.FindAnnotation(s.Metadata.Annotations, "tenant.service.alias.prefix")
+	if value, ok := s.Metadata.Annotations["netcracker.cloud/tenant.service.alias.prefix"]; ok {
+		return value
+	} else {
+		return ""
+	}
 }

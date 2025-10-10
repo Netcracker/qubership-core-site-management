@@ -7,8 +7,6 @@ import (
 	pgdbaas "github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4"
 	"github.com/netcracker/qubership-core-lib-go/v3/configloader"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
-	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
-	utils2 "github.com/netcracker/qubership-core-lib-go/v3/utils"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/composite"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/dao/pg"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain"
@@ -756,7 +754,7 @@ func (s *Synchronizer) generateShoppingRoute(ctx context.Context, domainName, te
 // Returns services marked by annotation key "netcracker.cloud/tenant.service.alias.prefix" as public
 func (s *Synchronizer) GetPublicServices(ctx context.Context, namespaces []string) (*[]mdomain.Service, error) {
 	filter := func(service *mdomain.Service) bool {
-		_, ok := serviceloader.MustLoad[utils2.AnnotationMapper]().Find(service.Metadata.Annotations, "tenant.service.alias.prefix")
+		_, ok := service.Metadata.Annotations["netcracker.cloud/tenant.service.alias.prefix"]
 		return ok
 	}
 
@@ -1549,22 +1547,25 @@ func hostBelongsToActiveTenant(_ context.Context, host string, allSettings *[]do
 }
 
 func IsVirtual(r mdomain.Metadata) bool {
-	return utils.FindAnnotation(r.Annotations, "tenant.service.type") == "virtual"
+	value, ok := r.Annotations["netcracker.cloud/tenant.service.type"]
+	return ok && value == "virtual"
 }
 
 func RouteIsGeneral(r *mdomain.Route) bool {
-	return utils.FindAnnotation(r.Metadata.Annotations, "tenant.service.tenant.id") == "GENERAL"
+	value, ok := r.Metadata.Annotations["netcracker.cloud/tenant.service.tenant.id"]
+	return ok && value == "GENERAL"
 }
 
 func RouteHasTenantId(tenantId string) func(r *mdomain.Route) bool {
 	return func(r *mdomain.Route) bool {
-		return utils.FindAnnotation(r.Metadata.Annotations, "tenant.service.tenant.id") == tenantId
+		value, ok := r.Metadata.Annotations["netcracker.cloud/tenant.service.tenant.id"]
+		return ok && value == tenantId
 	}
 }
 
 func IsRouteManageable(r *mdomain.Route) bool {
-	annotation := utils.FindAnnotation(r.Metadata.Annotations, "tenant.service.tenant.id")
-	return annotation != "" && annotation != "GENERAL"
+	value, ok := r.Metadata.Annotations["netcracker.cloud/tenant.service.tenant.id"]
+	return ok && strings.Compare(value, "GENERAL") != 0
 }
 
 func (s *Synchronizer) buildCustomServicesFromRoutes(ctx context.Context, routes *[]mdomain.Route, protocol string, namespaces []string) (*[]mdomain.CustomService, error) {

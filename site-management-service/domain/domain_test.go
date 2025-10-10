@@ -2,16 +2,10 @@ package domain
 
 import (
 	"fmt"
-	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
-	"github.com/netcracker/qubership-core-lib-go/v3/utils"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
 	"reflect"
 	"testing"
 )
-
-func init() {
-	serviceloader.Register(1, utils.NewResourceGroupAnnotationsMapper("netcracker.cloud"))
-}
 
 func TestFromRoutes(t *testing.T) {
 	routes := []domain.Route{
