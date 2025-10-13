@@ -1565,7 +1565,7 @@ func RouteHasTenantId(tenantId string) func(r *mdomain.Route) bool {
 
 func IsRouteManageable(r *mdomain.Route) bool {
 	value, ok := r.Metadata.Annotations["netcracker.cloud/tenant.service.tenant.id"]
-	return ok && strings.Compare(value, "GENERAL") != 0
+	return ok && value != "GENERAL"
 }
 
 func (s *Synchronizer) buildCustomServicesFromRoutes(ctx context.Context, routes *[]mdomain.Route, protocol string, namespaces []string) (*[]mdomain.CustomService, error) {
