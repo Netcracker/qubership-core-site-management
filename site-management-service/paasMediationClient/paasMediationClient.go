@@ -380,8 +380,8 @@ func (c *PaasMediationClient) getRoutesWithoutCache(ctx context.Context, namespa
 		logger.ErrorC(ctx, "Error occurred while building route list url: %+v", err)
 		return nil, err
 	}
-	routeList := new([]domain.Route)
-	err = c.performRequestWithRetry(ctx, buildUrl, fasthttp.MethodGet, nil, fasthttp.StatusOK, routeList)
+	routeList := make([]domain.Route, 0)
+	err = c.performRequestWithRetry(ctx, buildUrl, fasthttp.MethodGet, nil, fasthttp.StatusOK, &routeList)
 	if err != nil {
 		return nil, err
 	}
@@ -396,7 +396,7 @@ func (c *PaasMediationClient) getRoutesWithoutCache(ctx context.Context, namespa
 	if err != nil {
 		return nil, err
 	}
-	allRoutes := append(*routeList, convertHTTPRoutes(httpRouteList)...)
+	routeList = append(routeList, convertHTTPRoutes(httpRouteList)...)
 
 	buildUrl, err = c.buildUrl(ctx, namespace, grpcRoutesString, "")
 	if err != nil {
@@ -410,10 +410,10 @@ func (c *PaasMediationClient) getRoutesWithoutCache(ctx context.Context, namespa
 		return nil, err
 	}
 
-	logger.InfoC(ctx, "Get routes from namespace %s was completed successfully. Got %d routes", namespace, len(*routeList))
-	allRoutes = append(*routeList, convertGRPCRoutes(grpcRouteList)...)
+	logger.InfoC(ctx, "Get routes from namespace %s was completed successfully. Got %d routes", namespace, len(routeList))
+	routeList = append(routeList, convertGRPCRoutes(grpcRouteList)...)
 
-	return allRoutes, nil
+	return routeList, nil
 }
 func buildDomainRouteFromGateway(metaObj metav1.Object, host string, path string, backendName string, targetPort int32) domain.Route {
 	return domain.Route{
