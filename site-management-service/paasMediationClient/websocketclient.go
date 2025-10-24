@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+
 	"github.com/gorilla/websocket"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
 	"github.com/netcracker/qubership-core-lib-go/v3/security"
 	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 )
 
 var loggerWS logging.Logger
@@ -22,6 +23,7 @@ type (
 		namespace         string
 		resource          string
 		websocketExecutor websocketExecutor
+		adapter           Adapter
 	}
 	websocketExecutor interface {
 		collectHeaders(ctx context.Context, idpAddress url.URL) (http.Header, error)
@@ -29,6 +31,7 @@ type (
 	}
 	defaultWebsocketExecutor struct {
 	}
+	Adapter func(t []byte) ([][]byte, error)
 )
 
 func init() {
@@ -36,12 +39,17 @@ func init() {
 }
 
 func CreateWebSocketClient(ctx context.Context, channel *chan []byte, host, namespace, resource string) {
+	CreateWebSocketClientWithAdapter(ctx, channel, host, namespace, resource, nil)
+}
+
+func CreateWebSocketClientWithAdapter(ctx context.Context, channel *chan []byte, host, namespace, resource string, adapter Adapter) {
 	loggerWS.InfoC(ctx, "Create new web socket client for host '%s', namespace '%s', resource '%s'", host, namespace, resource)
 	client := &WebSocketClient{
 		bus:               *channel,
 		namespace:         namespace,
 		resource:          resource,
 		websocketExecutor: &defaultWebsocketExecutor{},
+		adapter:           adapter,
 	}
 	u := url.URL{Scheme: "ws", Host: host, Path: client.generatePath()}
 
@@ -99,7 +107,18 @@ func (c *WebSocketClient) initWebsocketClient(ctx context.Context, u url.URL) {
 				conn.Close()
 				break
 			} else {
-				c.bus <- message
+				if c.adapter != nil {
+					messages, err := c.adapter(message)
+					if err != nil {
+						loggerWS.ErrorC(ctx, "Error occurred during adapting message: %s", err.Error())
+						continue
+					}
+					for _, message := range messages {
+						c.bus <- message
+					}
+				} else {
+					c.bus <- message
+				}
 			}
 		}
 	}
