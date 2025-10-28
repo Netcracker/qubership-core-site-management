@@ -12,9 +12,9 @@ metadata:
         app.kubernetes.io/part-of: 'Cloud-Core'
         app.kubernetes.io/managed-by: 'saasDeployer'
         app.kubernetes.io/technology: 'go'
-        deployment.qubership.org/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
+        deployment.netcracker.com/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
     annotations:
-        qubership.cloud/start.stage: '2'
+        netcracker.cloud/start.stage: '2'
 spec:
     replicas: {{ .Values.REPLICAS | default 1 }}
     revisionHistoryLimit: 3

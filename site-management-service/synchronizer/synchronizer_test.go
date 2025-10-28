@@ -3,8 +3,6 @@ package synchronizer
 import (
 	"context"
 	"fmt"
-	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
-	"github.com/netcracker/qubership-core-lib-go/v3/utils"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain"
 	pmClient "github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient"
 	mdomain "github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
@@ -31,8 +29,8 @@ var (
 		Metadata: mdomain.Metadata{Name: "first_test_route",
 			Namespace: "test_namespace",
 			Annotations: map[string]string{
-				"qubership.cloud/tenant.service.id":        "first_test_service_id",
-				"qubership.cloud/tenant.service.tenant.id": "GENERAL"}},
+				"netcracker.cloud/tenant.service.id":        "first_test_service_id",
+				"netcracker.cloud/tenant.service.tenant.id": "GENERAL"}},
 	}
 
 	secondRoute = mdomain.Route{
@@ -43,8 +41,8 @@ var (
 		Metadata: mdomain.Metadata{Name: "second_test_route",
 			Namespace: "test_namespace",
 			Annotations: map[string]string{
-				"qubership.cloud/tenant.service.id":        "second_test_service_id",
-				"qubership.cloud/tenant.service.tenant.id": "test_tenant_id"}},
+				"netcracker.cloud/tenant.service.id":        "second_test_service_id",
+				"netcracker.cloud/tenant.service.tenant.id": "test_tenant_id"}},
 	}
 
 	thirdRoute = mdomain.Route{
@@ -55,8 +53,8 @@ var (
 		Metadata: mdomain.Metadata{Name: "third_test_route",
 			Namespace: "test_namespace",
 			Annotations: map[string]string{
-				"qubership.cloud/tenant.service.id":        "first_test_service_id",
-				"qubership.cloud/tenant.service.tenant.id": "test_tenant_id"}},
+				"netcracker.cloud/tenant.service.id":        "first_test_service_id",
+				"netcracker.cloud/tenant.service.tenant.id": "test_tenant_id"}},
 	}
 
 	generalRoute = mdomain.Route{
@@ -67,8 +65,8 @@ var (
 		Metadata: mdomain.Metadata{Name: "general_test_route",
 			Namespace: "test_namespace",
 			Annotations: map[string]string{
-				"qubership.cloud/tenant.service.id":        "first_test_service_id",
-				"qubership.cloud/tenant.service.tenant.id": "GENERAL"}},
+				"netcracker.cloud/tenant.service.id":        "first_test_service_id",
+				"netcracker.cloud/tenant.service.tenant.id": "GENERAL"}},
 	}
 
 	customRoute = mdomain.Route{
@@ -79,7 +77,7 @@ var (
 		Metadata: mdomain.Metadata{Name: "custom_test_route",
 			Namespace: "test_namespace",
 			Annotations: map[string]string{
-				"qubership.cloud/tenant.service.id": "first_test_service_id"}},
+				"netcracker.cloud/tenant.service.id": "first_test_service_id"}},
 	}
 
 	routes = []mdomain.Route{firstRoute, secondRoute, thirdRoute, generalRoute, customRoute}
@@ -128,8 +126,8 @@ var (
 		Sites: domain.Sites{
 			defaultSiteName: domain.Services{
 				oldServiceName: domain.AddressList{
-					"tenanttestqa2.backup.openshift.sdntest.qubership.org/welcome",
-					"www.tenanttestqa2.backup.openshift.sdntest.qubership.org/welcome",
+					"tenanttestqa2.backup.openshift.sdntest.netcracker.com/welcome",
+					"www.tenanttestqa2.backup.openshift.sdntest.netcracker.com/welcome",
 				},
 			},
 		},
@@ -140,7 +138,7 @@ var (
 			Namespace: "firstNamespace",
 			Name:      "test-service",
 			Annotations: map[string]string{
-				"qubership.cloud/tenant.service.tenant.id": "GENERAL",
+				"netcracker.cloud/tenant.service.tenant.id": "GENERAL",
 			},
 		},
 	}
@@ -150,15 +148,11 @@ var (
 			Namespace: "thirdNamespace",
 			Name:      "test-service",
 			Annotations: map[string]string{
-				"qubership.cloud/tenant.service.tenant.id": "GENERAL",
+				"netcracker.cloud/tenant.service.tenant.id": "GENERAL",
 			},
 		},
 	}
 )
-
-func init() {
-	serviceloader.Register(1, utils.NewResourceGroupAnnotationsMapper("qubership.cloud"))
-}
 
 func TestFindServicesInNamespace(t *testing.T) {
 	sync := Synchronizer{

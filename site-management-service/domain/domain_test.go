@@ -2,16 +2,10 @@ package domain
 
 import (
 	"fmt"
-	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
-	"github.com/netcracker/qubership-core-lib-go/v3/utils"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
 	"reflect"
 	"testing"
 )
-
-func init() {
-	serviceloader.Register(1, utils.NewResourceGroupAnnotationsMapper("qubership.cloud"))
-}
 
 func TestFromRoutes(t *testing.T) {
 	routes := []domain.Route{
@@ -19,9 +13,9 @@ func TestFromRoutes(t *testing.T) {
 			Metadata: domain.Metadata{
 				Name: "tenant-self-service",
 				Annotations: map[string]string{
-					"qubership.cloud/tenant.service.show.description": "Service to manage users and services",
-					"qubership.cloud/tenant.service.show.name":        "Control Panel (Personal Cabinet)",
-					"qubership.cloud/tenant.service.tenant.id":        "GENERAL",
+					"netcracker.cloud/tenant.service.show.description": "Service to manage users and services",
+					"netcracker.cloud/tenant.service.show.name":        "Control Panel (Personal Cabinet)",
+					"netcracker.cloud/tenant.service.tenant.id":        "GENERAL",
 				},
 			},
 			Spec: domain.RouteSpec{
@@ -35,11 +29,11 @@ func TestFromRoutes(t *testing.T) {
 			Metadata: domain.Metadata{
 				Name: "tenanttestqa2",
 				Annotations: map[string]string{
-					"qubership.cloud/tenant.service.tenant.id":        "b416daa5-a2be-42fa-bc6f-ee3a0e805a6b",
-					"qubership.cloud/tenant.service.url.suffix":       "welcome",
-					"qubership.cloud/tenant.service.id":               "shopping-frontend",
-					"qubership.cloud/tenant.service.show.description": "Market for your customers",
-					"qubership.cloud/tenant.service.show.name":        "Shopping Catalogue",
+					"netcracker.cloud/tenant.service.tenant.id":        "b416daa5-a2be-42fa-bc6f-ee3a0e805a6b",
+					"netcracker.cloud/tenant.service.url.suffix":       "welcome",
+					"netcracker.cloud/tenant.service.id":               "shopping-frontend",
+					"netcracker.cloud/tenant.service.show.description": "Market for your customers",
+					"netcracker.cloud/tenant.service.show.name":        "Shopping Catalogue",
 				},
 			},
 			Spec: domain.RouteSpec{
@@ -53,11 +47,11 @@ func TestFromRoutes(t *testing.T) {
 			Metadata: domain.Metadata{
 				Name: "tenanttestqa2-www",
 				Annotations: map[string]string{
-					"qubership.cloud/tenant.service.id":               "shopping-frontend",
-					"qubership.cloud/tenant.service.show.description": "Market for your customers",
-					"qubership.cloud/tenant.service.show.name":        "Shopping Catalogue",
-					"qubership.cloud/tenant.service.tenant.id":        "b416daa5-a2be-42fa-bc6f-ee3a0e805a6b",
-					"qubership.cloud/tenant.service.url.suffix":       "welcome",
+					"netcracker.cloud/tenant.service.id":               "shopping-frontend",
+					"netcracker.cloud/tenant.service.show.description": "Market for your customers",
+					"netcracker.cloud/tenant.service.show.name":        "Shopping Catalogue",
+					"netcracker.cloud/tenant.service.tenant.id":        "b416daa5-a2be-42fa-bc6f-ee3a0e805a6b",
+					"netcracker.cloud/tenant.service.url.suffix":       "welcome",
 				},
 			},
 			Spec: domain.RouteSpec{
@@ -125,7 +119,7 @@ func TestTenantDns_ToRoute(t *testing.T) {
 		Metadata: domain.Metadata{
 			Name: actual.Metadata.Name,
 			Annotations: map[string]string{
-				"qubership.cloud/tenant.service.tenant.id": "b416daa5-a2be-42fa-bc6f-ee3a0e805a6b",
+				"netcracker.cloud/tenant.service.tenant.id": "b416daa5-a2be-42fa-bc6f-ee3a0e805a6b",
 			},
 		},
 		Spec: domain.RouteSpec{
