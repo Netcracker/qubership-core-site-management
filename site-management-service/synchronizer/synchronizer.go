@@ -1305,7 +1305,9 @@ func (s *Synchronizer) SyncTenantsWithTM(ctx context.Context, tenantEvent tm.Ten
 				return errors.New(err)
 			}
 		} else {
-			return s.upsertTenantFromTM(ctx, tenantFromEvent)
+			if tenantFromEvent.Namespace != s.pmClient.Namespace {
+				return s.upsertTenantFromTM(ctx, tenantFromEvent)
+			}
 		}
 
 	}
