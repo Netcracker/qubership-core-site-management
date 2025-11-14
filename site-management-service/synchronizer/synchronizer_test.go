@@ -126,8 +126,8 @@ var (
 		Sites: domain.Sites{
 			defaultSiteName: domain.Services{
 				oldServiceName: domain.AddressList{
-					"tenanttestqa2.backup.openshift.sdntest.netcracker.com/welcome",
-					"www.tenanttestqa2.backup.openshift.sdntest.netcracker.com/welcome",
+					"tenanttestqa2.backup.openshift.sdntest.qubership.org/welcome",
+					"www.tenanttestqa2.backup.openshift.sdntest.qubership.org/welcome",
 				},
 			},
 		},
