@@ -59,6 +59,7 @@ type (
 		cache                  *CompositeCache
 		httpExecutor           httpExecutor
 		callbacks              []RoutesCallback
+		enableGatewayRoutes    bool
 	}
 
 	httpExecutor interface {
@@ -130,11 +131,15 @@ func init() {
 	logger = logging.GetLogger("paasMediationClient")
 }
 
-func NewClient(ctx context.Context, internalGatewayAddress *url.URL, namespace string) *PaasMediationClient {
+func NewClient(ctx context.Context, internalGatewayAddress *url.URL, namespace string, enableGatewayRoutes bool) *PaasMediationClient {
 	if internalGatewayAddress == nil {
 		panic(fmt.Sprintf("Parameters \"internalGatewayAddress\" and \"idpAddress\" can not be empty!"))
 	}
-	client := &PaasMediationClient{InternalGatewayAddress: internalGatewayAddress, Namespace: namespace}
+	client := &PaasMediationClient{
+		InternalGatewayAddress: internalGatewayAddress,
+		Namespace:              namespace,
+		enableGatewayRoutes:    enableGatewayRoutes,
+	}
 	client.httpExecutor = createDefaultHttpExecutor()
 	client.initCompositeCache(ctx)
 	return client
@@ -386,32 +391,36 @@ func (c *PaasMediationClient) getRoutesWithoutCache(ctx context.Context, namespa
 		return nil, err
 	}
 
-	buildUrl, err = c.buildUrl(ctx, namespace, httpRoutesString, "")
-	if err != nil {
-		logger.ErrorC(ctx, "Error occurred while building http route list url: %+v", err)
-		return nil, err
-	}
-	httpRouteList := make([]gatewayv1.HTTPRoute, 0)
-	err = c.performRequestWithRetry(ctx, buildUrl, fasthttp.MethodGet, nil, fasthttp.StatusOK, &httpRouteList)
-	if err != nil {
-		return nil, err
-	}
-	routeList = append(routeList, convertHTTPRoutes(httpRouteList)...)
+	if c.enableGatewayRoutes {
+		buildUrl, err = c.buildUrl(ctx, namespace, httpRoutesString, "")
+		if err != nil {
+			logger.ErrorC(ctx, "Error occurred while building http route list url: %+v", err)
+			return nil, err
+		}
+		httpRouteList := make([]gatewayv1.HTTPRoute, 0)
+		err = c.performRequestWithRetry(ctx, buildUrl, fasthttp.MethodGet, nil, fasthttp.StatusOK, &httpRouteList)
+		if err != nil {
+			return nil, err
+		}
+		routeList = append(routeList, convertHTTPRoutes(httpRouteList)...)
 
-	buildUrl, err = c.buildUrl(ctx, namespace, grpcRoutesString, "")
-	if err != nil {
-		logger.ErrorC(ctx, "Error occurred while building grpc route list url: %+v", err)
-		return nil, err
-	}
+		buildUrl, err = c.buildUrl(ctx, namespace, grpcRoutesString, "")
+		if err != nil {
+			logger.ErrorC(ctx, "Error occurred while building grpc route list url: %+v", err)
+			return nil, err
+		}
 
-	grpcRouteList := make([]gatewayv1.GRPCRoute, 0)
-	err = c.performRequestWithRetry(ctx, buildUrl, fasthttp.MethodGet, nil, fasthttp.StatusOK, &grpcRouteList)
-	if err != nil {
-		return nil, err
-	}
+		grpcRouteList := make([]gatewayv1.GRPCRoute, 0)
+		err = c.performRequestWithRetry(ctx, buildUrl, fasthttp.MethodGet, nil, fasthttp.StatusOK, &grpcRouteList)
+		if err != nil {
+			return nil, err
+		}
 
-	logger.InfoC(ctx, "Get routes from namespace %s was completed successfully. Got %d routes", namespace, len(routeList))
-	routeList = append(routeList, convertGRPCRoutes(grpcRouteList)...)
+		routeList = append(routeList, convertGRPCRoutes(grpcRouteList)...)
+		logger.InfoC(ctx, "Get routes from namespace %s was completed successfully. Got %d routes (gateway routes enabled)", namespace, len(routeList))
+	} else {
+		logger.InfoC(ctx, "Get routes from namespace %s was completed successfully. Got %d routes (gateway routes disabled)", namespace, len(routeList))
+	}
 
 	return routeList, nil
 }
@@ -582,8 +591,10 @@ func (c *PaasMediationClient) GetRoutes(ctx context.Context, namespace string) (
 		logger.WarnC(ctx, "Namespace %s was not found in cache, trying to get routes from paas-mediation service", namespace)
 		c.cache.routesCache.mutex.RUnlock()
 		CreateWebSocketClient(ctx, &c.cache.routesCache.bus, c.InternalGatewayAddress.Host, namespace, routesString)
-		CreateWebSocketClientWithAdapter(ctx, &c.cache.routesCache.bus, c.InternalGatewayAddress.Host, namespace, httpRoutesString, httpRouteAdapter)
-		CreateWebSocketClientWithAdapter(ctx, &c.cache.routesCache.bus, c.InternalGatewayAddress.Host, namespace, grpcRoutesString, grpcRouteAdapter)
+		if c.enableGatewayRoutes {
+			CreateWebSocketClientWithAdapter(ctx, &c.cache.routesCache.bus, c.InternalGatewayAddress.Host, namespace, httpRoutesString, httpRouteAdapter)
+			CreateWebSocketClientWithAdapter(ctx, &c.cache.routesCache.bus, c.InternalGatewayAddress.Host, namespace, grpcRoutesString, grpcRouteAdapter)
+		}
 		for i := 0; ; i++ {
 			time.Sleep(sleepInit)
 			c.cache.routesCache.mutex.RLock()
@@ -1059,8 +1070,10 @@ func (c *PaasMediationClient) initRoutesCache(ctx context.Context, ch chan *Rout
 
 	channel := make(chan []byte, 50)
 	CreateWebSocketClient(ctx, &channel, c.InternalGatewayAddress.Host, c.Namespace, routesString)
-	CreateWebSocketClientWithAdapter(ctx, &channel, c.InternalGatewayAddress.Host, c.Namespace, httpRoutesString, httpRouteAdapter)
-	CreateWebSocketClientWithAdapter(ctx, &channel, c.InternalGatewayAddress.Host, c.Namespace, grpcRoutesString, grpcRouteAdapter)
+	if c.enableGatewayRoutes {
+		CreateWebSocketClientWithAdapter(ctx, &channel, c.InternalGatewayAddress.Host, c.Namespace, httpRoutesString, httpRouteAdapter)
+		CreateWebSocketClientWithAdapter(ctx, &channel, c.InternalGatewayAddress.Host, c.Namespace, grpcRoutesString, grpcRouteAdapter)
+	}
 
 	routesCache := RoutesCache{
 		mutex:     newMutex,

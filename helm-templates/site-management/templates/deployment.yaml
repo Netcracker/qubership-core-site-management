@@ -113,6 +113,8 @@ spec:
                 -   name: CONSUL_URL
                     value: '{{ .Values.CONSUL_URL }}'
                 {{ end }}
+                -   name: ENABLE_GATEWAY_ROUTES
+                    value: '{{ .Values.ENABLE_GATEWAY_ROUTES }}'
                 resources:
                     requests:
                         cpu: '{{ .Values.CPU_REQUEST }}'
