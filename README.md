@@ -40,6 +40,7 @@ Site Management is a microservice that processes cloud project external routes.
 | TRACING_ENABLED              | Is tracing enabled                                           | false                                                                 |
 | TRACING_HOST                 | Tracing server host                                          | None                                                                  |
 | TRACING_SAMPLER_RATELIMITING | The rate for requests sampling (number of traces per second) | 10                                                                    |
+| CORE_PAAS_MEDIATION_GW_API_ENABLED | Feature flag to enable gateway-api routes (HTTP and gRPC) requests from paas-mediation | false |
 
 
 # PUBLIC REST API
