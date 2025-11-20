@@ -4,14 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"time"
+
 	"github.com/gorilla/websocket"
+	"github.com/netcracker/qubership-core-lib-go/v3/configloader"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
 	"github.com/netcracker/qubership-core-lib-go/v3/security"
 	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 )
 
 var loggerWS logging.Logger
@@ -22,6 +25,7 @@ type (
 		namespace         string
 		resource          string
 		websocketExecutor websocketExecutor
+		wsRetryInterval   time.Duration
 	}
 	websocketExecutor interface {
 		collectHeaders(ctx context.Context, idpAddress url.URL) (http.Header, error)
@@ -42,6 +46,7 @@ func CreateWebSocketClient(ctx context.Context, channel *chan []byte, host, name
 		namespace:         namespace,
 		resource:          resource,
 		websocketExecutor: &defaultWebsocketExecutor{},
+		wsRetryInterval:   configloader.GetKoanf().Duration("paas-mediation.ws-retry-interval"),
 	}
 	u := url.URL{Scheme: "ws", Host: host, Path: client.generatePath()}
 
@@ -73,6 +78,7 @@ func (c *WebSocketClient) initWebsocketClient(ctx context.Context, u url.URL) {
 				loggerWS.ErrorC(ctx, string(b))
 			}
 			loggerWS.ErrorC(ctx, "dial error with url '%s': %s", u.String(), err)
+			time.Sleep(c.wsRetryInterval)
 			continue
 		}
 		loggerWS.InfoC(ctx, "Status: %s", resp.Status)

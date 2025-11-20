@@ -1421,21 +1421,18 @@ func (s *Synchronizer) processSynchronization(ctx context.Context) error {
 	for _, tenantSites := range *allSettings {
 		if tenantSites.Active {
 			logger.DebugC(ctx, "Getting composite namespace for tenant %v", tenantSites)
-			compositeNamespace, err := s.getCompositeNamespaceForTenant(ctx, tenantSites)
-			if err == nil {
-				for _, siteServices := range tenantSites.Sites {
-					for service, addresses := range siteServices {
-						for _, address := range addresses {
-							logger.DebugC(ctx, "Resolving namespace for service %s", service)
-							namespace, err := s.resolveNamespaceForService(ctx, service, *compositeNamespace)
-							if err == nil {
-								logger.DebugC(ctx, "Getting routes for service %s in namespace %s", service, namespace)
-								currentNamespaceRoutes, err := s.pmClient.GetRoutes(ctx, namespace)
-								if err == nil && !isHostPresentInOpenshiftRoutes(ctx, address, service, currentNamespaceRoutes) {
-									logger.DebugC(ctx, "Host %s is not presented in openshift and will be created", address)
-									s.pmClient.CreateRoute(ctx, tenantSites.ToRoute(service, address), namespace)
-									changedTenants[tenantSites.TenantId] = tenantSites
-								}
+			for _, siteServices := range tenantSites.Sites {
+				for service, addresses := range siteServices {
+					for _, address := range addresses {
+						logger.DebugC(ctx, "Resolving namespace for service %s", service)
+						err := s.isServiceInNamespace(ctx, service, s.pmClient.Namespace)
+						if err == nil {
+							logger.DebugC(ctx, "Getting routes for service %s in namespace %s", service, s.pmClient.Namespace)
+							currentNamespaceRoutes, err := s.pmClient.GetRoutes(ctx, s.pmClient.Namespace)
+							if err == nil && !isHostPresentInOpenshiftRoutes(ctx, address, service, currentNamespaceRoutes) {
+								logger.DebugC(ctx, "Host %s is not presented in openshift and will be created", address)
+								s.pmClient.CreateRoute(ctx, tenantSites.ToRoute(service, address), s.pmClient.Namespace)
+								changedTenants[tenantSites.TenantId] = tenantSites
 							}
 						}
 					}
@@ -1465,29 +1462,28 @@ func (s *Synchronizer) processSynchronization(ctx context.Context) error {
 	return nil
 }
 
-func (s *Synchronizer) resolveNamespaceForService(ctx context.Context, service string, compositeNamespace domain.CompositeNamespace) (string, error) {
-	logger.InfoC(ctx, "Resolve namespace for service %s from namespaces %v", service, compositeNamespace)
+func (s *Synchronizer) isServiceInNamespace(ctx context.Context, service string, namespace string) error {
+	logger.InfoC(ctx, "Resolve namespace for service %s from namespaces %s", service, namespace)
 	wait := 0
-	namespace := ""
 	var err error
 	for wait < serviceTimeout {
-		namespace, err = s.findServiceInNamespaces(ctx, service, compositeNamespace)
+		namespace, err = s.findServiceInNamespaces(ctx, service, domain.CompositeNamespace{Namespace: namespace})
 		logger.InfoC(ctx, "findServiceInNamespaces namespace: '%s'", namespace)
 		if err == nil && namespace != "" {
 			break
 		}
-		logger.InfoC(ctx, "Couldn't resolve namespace for service %s from namespaces %v. Try again...", service, compositeNamespace)
+		logger.InfoC(ctx, "Couldn't resolve namespace for service %s from namespaces %s. Try again...", service, namespace)
 		s.pmClient.InitServicesMapInCache(ctx, namespace)
 		time.Sleep(step * time.Millisecond)
 		wait += step
 	}
 	if err != nil {
-		return "", err
+		return err
 	} else if namespace != "" {
-		return namespace, nil
+		return nil
 	}
 
-	return "", errors.New(fmt.Sprintf("Service %s wasn't found in any namespace: %v or master namespace %s", service, compositeNamespace, s.pmClient.Namespace))
+	return errors.New(fmt.Sprintf("Service %s wasn't found in namespace: %s", service, namespace))
 }
 
 func (s *Synchronizer) findServiceInNamespaces(ctx context.Context, service string, compositeNamespace domain.CompositeNamespace) (string, error) {
