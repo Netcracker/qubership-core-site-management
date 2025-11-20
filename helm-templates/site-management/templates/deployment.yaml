@@ -113,6 +113,8 @@ spec:
                 -   name: CONSUL_URL
                     value: '{{ .Values.CONSUL_URL }}'
                 {{ end }}
+                -   name: CORE_PAAS_MEDIATION_GW_API_ENABLED
+                    value: '{{ .Values.CORE_PAAS_MEDIATION_GW_API_ENABLED }}'
                 resources:
                     requests:
                         cpu: '{{ .Values.CPU_REQUEST }}'
