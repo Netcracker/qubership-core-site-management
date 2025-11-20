@@ -5,6 +5,9 @@ microservice:
 synchronizer:
   interval: 120s
 
+paas-mediation:
+  ws-retry-interval: 5s
+
 tenant:
   default:
     domain:
