@@ -25,9 +25,3 @@ mail:
 consul-source-config:
   acl:
     disabled: true
-
-paas:
-  mediation:
-    enable:
-      gateway:
-        routes: false
