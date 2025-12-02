@@ -5,23 +5,23 @@ go 1.25.4
 require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-errors/errors v1.5.1
-	github.com/gofiber/fiber/v2 v2.52.9
+	github.com/gofiber/fiber/v2 v2.52.10
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/mitchellh/hashstructure/v2 v2.0.2
-	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.1.0
-	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.0.4
-	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.0.4
-	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.1.0
-	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.1.0
-	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.1.0
-	github.com/netcracker/qubership-core-lib-go/v3 v3.2.0
+	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.1.3
+	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.0.7
+	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.0.7
+	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.1.3
+	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.1.3
+	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.1.3
+	github.com/netcracker/qubership-core-lib-go/v3 v3.2.3
 	github.com/smarty/assertions v1.16.0
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/swag v1.16.6
 	github.com/testcontainers/testcontainers-go v0.40.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.40.0
-	github.com/uptrace/bun v1.2.15
+	github.com/uptrace/bun v1.2.16
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/valyala/fasthttp v1.68.0
 	k8s.io/apimachinery v0.34.2
@@ -131,7 +131,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
-	github.com/uptrace/bun/dialect/pgdialect v1.2.15 // indirect
+	github.com/uptrace/bun/dialect/pgdialect v1.2.16 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/vibrantbyte/go-antpath v1.1.1 // indirect
 	github.com/viney-shih/go-lock v1.1.2 // indirect
@@ -156,7 +156,7 @@ require (
 	golang.org/x/mod v0.28.0 // indirect
 	golang.org/x/net v0.46.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
-	golang.org/x/sys v0.37.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
 	golang.org/x/tools v0.37.0 // indirect
 	google.golang.org/protobuf v1.36.8 // indirect
