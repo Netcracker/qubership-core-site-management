@@ -302,6 +302,8 @@ github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.1.3 h1:iZGGqWn
 github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.1.3/go.mod h1:3pm82+G0yYS0EpcVeBZZOFMpT8huOorP/gxdT6QKzgU=
 github.com/netcracker/qubership-core-lib-go/v3 v3.2.3 h1:3XzobpXMi7QZHuKaDeZxxc2bSUT8Ye4CCFM0+suAjYU=
 github.com/netcracker/qubership-core-lib-go/v3 v3.2.3/go.mod h1:ql9/u1YHG9LBLJxV9dm+xAy2hOiUAC7dZx8nS+wdttw=
+github.com/netcracker/qubership-core-lib-go/v3 v3.2.4 h1:b7BTopvJ64K5y900kinhigldBuY2tghBFqKmkIrwnXA=
+github.com/netcracker/qubership-core-lib-go/v3 v3.2.4/go.mod h1:ogUjQL/yUuqr4H0LJ4oeSDcTxJ/QLhKKuUPAQLEQrn0=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.1 h1:y0fUlFfIZhPF1W537XOLg0/fcx6zcHCJwooC2xJA040=
