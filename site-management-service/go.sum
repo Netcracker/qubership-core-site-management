@@ -290,8 +290,12 @@ github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.2.0 h1:RMFjX9s
 github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.2.0/go.mod h1:Hvtz7YgYb5qrp8cMHVOEa2nJel2ICt8rQrB2NGpANkQ=
 github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.0.7 h1:LwKnTPJnqqUXRtGRKMrHL7G37NqqfmHJrCYqHr65bDc=
 github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.0.7/go.mod h1:CfJQZlsKN6MXJ7LODg5cIarhSzwjgWJju6OnZEN8JdA=
+github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.0.8 h1:wvg3rCK4UadwsHr9s/ppX7oefmh6DVToiHZPqCzJ/Mc=
+github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.0.8/go.mod h1:y+xva4FOcx55uHswrxp1NA12BtFCtplGlyvvcVn32Bo=
 github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.0.7 h1:rs9j3+1tJZvl36QfVLiOQiX8rGS4fQLkbQDvV3yC7lI=
 github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.0.7/go.mod h1:2DT0QLH90m75roMZGJc1n3WBPZUI9nE1L4YTUo7GQe0=
+github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.0.8 h1:JOAjZBR/14j+mfkojfommWWlcRbzIXtbRZIF2IZlSYw=
+github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.0.8/go.mod h1:VjLSyuO8uSLJEtBXk7+PhtG6X74ZcFTYkZjSv6laOZE=
 github.com/netcracker/qubership-core-lib-go-error-handling/v3 v3.1.1 h1:vpQbXsw3KOZnLypyBziZDAXxRIKNj2BbAUr3kEhWIRA=
 github.com/netcracker/qubership-core-lib-go-error-handling/v3 v3.1.1/go.mod h1:HutiqthxXlyNdWz+BCEP+xTdaKgYV/vF4O5E5XRKHhE=
 github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.2.0 h1:PlcN9ce8aFckI/NVr49elDBw/InYdITM8+Mxt3QR790=
