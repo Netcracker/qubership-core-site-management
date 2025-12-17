@@ -51,6 +51,7 @@ type (
 		TenantAdmin string   `bson:"tenantAdmin" json:"tenantAdmin"`
 		Sites       Sites    `bson:"sites" json:"sites"`
 		Active      bool     `bson:"active" json:"active"`
+		// In current composite deployment design, Namespaces field of tenants is ignored
 		Namespaces  []string `bson:"namespaces" json:"namespaces" bun:",array"`
 		DomainName  string   `bson:"domainName" json:"domainName"`
 		ServiceName string   `bson:"serviceName" json:"serviceName"`

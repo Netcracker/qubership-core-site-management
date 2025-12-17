@@ -112,8 +112,11 @@ func testMigration(t *testing.T, fail bool) {
 
 	assert.Equal(t, 1, len(resultSlice))
 	assert.Equal(t, "migration0", resultSlice[0].Migration0)
-	assert.Equal(t, "migration1", resultSlice[0].Migration1)
-	assert.Equal(t, "migration2", resultSlice[0].Migration2)
+
+	if !fail {
+		assert.Equal(t, "migration1", resultSlice[0].Migration1)
+		assert.Equal(t, "migration2", resultSlice[0].Migration2)
+	}
 
 	if fail {
 		var ms migrate.MigrationSlice
@@ -127,9 +130,8 @@ func testMigration(t *testing.T, fail bool) {
 			panic(err)
 		}
 
+		assert.Equal(t, 1, len(ms))
 		assert.Equal(t, int64(1), ms[0].GroupID)
-		assert.Equal(t, int64(2), ms[1].GroupID)
-		assert.Equal(t, int64(2), ms[2].GroupID)
 	}
 
 	cleanTestEnvironment()
@@ -188,84 +190,106 @@ type TestEntity2 struct {
 
 func createTestMigrations(fail bool) *migrate.Migrations {
 	migrations := &migrate.Migrations{}
-	migration0 := migrate.Migration{Name: "00000000000000", Comment: "first_migration", Up: func(ctx context.Context, db *bun.DB, template any) error {
-		log.Info("first_migration")
-		err := db.RunInTx(ctx, &sql.TxOptions{}, func(ctx context.Context, tx bun.Tx) error {
-			testEntity0 := &TestEntity0{
-				BaseModel:  bun.BaseModel{},
-				Id:         0,
-				Migration0: "migration0",
-			}
-			_, err := tx.NewCreateTable().Model(testEntity0).Exec(ctx)
-			if err != nil {
-				log.Errorf("Failed table creation")
-				return gerrors.WrapPrefix(err, "failed table creation", 0)
-			}
-			log.Info("first_migration Insert")
-			_, err = tx.NewInsert().Model(testEntity0).Exec(ctx)
-			if err != nil {
-				log.Errorf("Failed data insertion")
-				return gerrors.WrapPrefix(err, "failed insertion", 0)
-			}
+	migrations.MustRegister(
+		func(ctx context.Context, db *bun.DB) error {
+			log.Info("first_migration")
+
+			err := db.RunInTx(ctx, &sql.TxOptions{}, func(ctx context.Context, tx bun.Tx) error {
+				testEntity0 := &TestEntity0{
+					BaseModel:  bun.BaseModel{},
+					Id:         0,
+					Migration0: "migration0",
+				}
+
+				if _, err := tx.NewCreateTable().Model(testEntity0).Exec(ctx); err != nil {
+					log.Errorf("Failed table creation")
+					return gerrors.WrapPrefix(err, "failed table creation", 0)
+				}
+
+				log.Info("first_migration Insert")
+
+				if _, err := tx.NewInsert().Model(testEntity0).Exec(ctx); err != nil {
+					log.Errorf("Failed data insertion")
+					return gerrors.WrapPrefix(err, "failed insertion", 0)
+				}
+
+				return nil
+			})
+
+			return err
+		},
+		func(ctx context.Context, db *bun.DB) error {
 			return nil
-		})
-		return err
-	}, Down: func(ctx context.Context, db *bun.DB, template any) error { return nil }}
-	migrations.Add(migration0)
-	migration1 := migrate.Migration{Name: "00000000000001", Comment: "second_migration", Up: func(ctx context.Context, db *bun.DB, template any) error {
-		log.Info("second_migration")
-		err := db.RunInTx(ctx, &sql.TxOptions{}, func(ctx context.Context, tx bun.Tx) error {
-			testEntity1 := &TestEntity1{
-				BaseModel:  bun.BaseModel{},
-				Id:         0,
-				Migration0: "migration0",
-				Migration1: "migration1",
-			}
-			_, err := tx.Exec("ALTER TABLE test_entity ADD COLUMN migration1 text")
-			if err != nil {
-				log.Errorf("Failed adding column")
-				return gerrors.WrapPrefix(err, "failed insertion", 0)
-			}
-			if fail {
-				log.Infof("Fail migration manually")
-				return errors.New("fail migration manually")
-			}
-			log.Info("second_migration Update")
-			_, err = tx.NewUpdate().Model(testEntity1).Column("migration1").Where("id=0").Exec(ctx)
-			if err != nil {
-				log.Errorf("Failed data updating")
-				return gerrors.WrapPrefix(err, "failed data updating", 0)
-			}
-			return nil
-		})
-		return err
-	}, Down: func(ctx context.Context, db *bun.DB, template any) error { return nil }}
-	migrations.Add(migration1)
-	migration2 := migrate.Migration{Name: "00000000000002", Comment: "third_migration", Up: func(ctx context.Context, db *bun.DB, template any) error {
-		log.Info("third_migration")
-		err := db.RunInTx(ctx, &sql.TxOptions{}, func(ctx context.Context, tx bun.Tx) error {
-			testEntity2 := &TestEntity2{
-				BaseModel:  bun.BaseModel{},
-				Id:         0,
-				Migration0: "migration0",
-				Migration1: "migration1",
-				Migration2: "migration2",
-			}
-			_, err := tx.Exec("ALTER TABLE test_entity ADD COLUMN migration2 text")
-			if err != nil {
-				log.Errorf("Failed adding column")
-				return gerrors.WrapPrefix(err, "failed adding column", 0)
-			}
-			log.Info("third_migration Update")
-			_, err = tx.NewUpdate().Model(testEntity2).Column("migration2").Where("id=0").Exec(ctx)
-			if err != nil {
-				log.Errorf("Failed data updating")
-				return gerrors.WrapPrefix(err, "failed data updating", 0)
-			}
-			return nil
-		})
-		return err
-	}, Down: func(ctx context.Context, db *bun.DB, template any) error { return nil }}
-	migrations.Add(migration2)
+		},
+	)
+	migrations.MustRegister(
+		func(ctx context.Context, db *bun.DB) error {
+			log.Info("second_migration")
+			return db.RunInTx(ctx, &sql.TxOptions{}, func(ctx context.Context, tx bun.Tx) error {
+				testEntity1 := &TestEntity1{
+					BaseModel:  bun.BaseModel{},
+					Id:         0,
+					Migration0: "migration0",
+					Migration1: "migration1",
+				}
+
+				if _, err := tx.Exec("ALTER TABLE test_entity ADD COLUMN migration1 text"); err != nil {
+					log.Errorf("Failed adding column")
+					return gerrors.WrapPrefix(err, "failed insertion", 0)
+				}
+
+				if fail {
+					log.Infof("Fail migration manually")
+					return errors.New("fail migration manually")
+				}
+
+				log.Info("second_migration Update")
+				_, err := tx.NewUpdate().
+					Model(testEntity1).
+					Column("migration1").
+					Where("id=0").
+					Exec(ctx)
+				if err != nil {
+					log.Errorf("Failed data updating")
+					return gerrors.WrapPrefix(err, "failed data updating", 0)
+				}
+				return nil
+			})
+		},
+		func(ctx context.Context, db *bun.DB) error { return nil },
+	)
+
+	migrations.MustRegister(
+		func(ctx context.Context, db *bun.DB) error {
+			log.Info("third_migration")
+			return db.RunInTx(ctx, &sql.TxOptions{}, func(ctx context.Context, tx bun.Tx) error {
+				testEntity2 := &TestEntity2{
+					BaseModel:  bun.BaseModel{},
+					Id:         0,
+					Migration0: "migration0",
+					Migration1: "migration1",
+					Migration2: "migration2",
+				}
+
+				if _, err := tx.Exec("ALTER TABLE test_entity ADD COLUMN migration2 text"); err != nil {
+					log.Errorf("Failed adding column")
+					return gerrors.WrapPrefix(err, "failed adding column", 0)
+				}
+
+				log.Info("third_migration Update")
+				_, err := tx.NewUpdate().
+					Model(testEntity2).
+					Column("migration2").
+					Where("id=0").
+					Exec(ctx)
+				if err != nil {
+					log.Errorf("Failed data updating")
+					return gerrors.WrapPrefix(err, "failed data updating", 0)
+				}
+				return nil
+			})
+		},
+		func(ctx context.Context, db *bun.DB) error { return nil },
+	)
 	return migrations
 }
