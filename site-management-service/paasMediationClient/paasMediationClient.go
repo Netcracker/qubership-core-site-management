@@ -391,6 +391,7 @@ func (c *PaasMediationClient) getRoutesWithoutCache(ctx context.Context, namespa
 		return nil, err
 	}
 
+	logger.InfoC(ctx, "Gateway API routes enabled?: %t", c.enableGatewayRoutes)
 	if c.enableGatewayRoutes {
 		buildUrl, err = c.buildUrl(ctx, namespace, httpRoutesString, "")
 		if err != nil {
@@ -417,10 +418,8 @@ func (c *PaasMediationClient) getRoutesWithoutCache(ctx context.Context, namespa
 		}
 
 		routeList = append(routeList, convertGRPCRoutes(grpcRouteList)...)
-		logger.InfoC(ctx, "Get routes from namespace %s was completed successfully. Got %d routes (gateway routes enabled)", namespace, len(routeList))
-	} else {
-		logger.InfoC(ctx, "Get routes from namespace %s was completed successfully. Got %d routes (gateway routes disabled)", namespace, len(routeList))
 	}
+	logger.InfoC(ctx, "Get routes from namespace %s was completed successfully. Got %d routes", namespace, len(routeList))
 
 	return routeList, nil
 }
