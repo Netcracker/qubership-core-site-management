@@ -429,6 +429,8 @@ github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.1.5 h1:8WKZeCa
 github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.1.5/go.mod h1:rc2RuUcURPAiwrpNSmwHiWiDoFvAIhSUQ4M0gw7vZMk=
 github.com/netcracker/qubership-core-lib-go/v3 v3.2.5 h1:nvmyK/5Nk+lUJJg8JuB6VOVsIr5o+XZyEgjyPS7hW1Q=
 github.com/netcracker/qubership-core-lib-go/v3 v3.2.5/go.mod h1:5bgdMxXBTly4lJR5bjFhOM3DwXNrYSoRQwe8psPAFl0=
+github.com/netcracker/qubership-core-lib-go/v3 v3.3.0 h1:3AMiSLfur9QADXFzAs42sPK3SMSjxVU8Sr9OrwB+UXI=
+github.com/netcracker/qubership-core-lib-go/v3 v3.3.0/go.mod h1:5bgdMxXBTly4lJR5bjFhOM3DwXNrYSoRQwe8psPAFl0=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e h1:fD57ERR4JtEqsWbfPhv4DMiApHyliiK5xCTNVSPiaAs=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/onsi/ginkgo/v2 v2.21.0 h1:7rg/4f3rB88pb5obDgNZrNHrQ4e6WpjonchcpuBRnZM=
