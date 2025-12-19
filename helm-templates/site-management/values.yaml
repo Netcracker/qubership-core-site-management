@@ -18,5 +18,4 @@ K8S_SERVICE_TYPE: 'CLUSTER_IP'
 CONSUL_ENABLED: false
 CONSUL_URL: ''
 
-# Feature flag to enable gateway-api routes (HTTP and gRPC) requests from paas-mediation
 CORE_PAAS_MEDIATION_GW_API_ENABLED: false
