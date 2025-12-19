@@ -14,8 +14,8 @@ require (
 	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.0.9
 	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.2.1
 	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.1.5
-	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.1.5
-	github.com/netcracker/qubership-core-lib-go/v3 v3.2.5
+	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.1.6
+	github.com/netcracker/qubership-core-lib-go/v3 v3.3.0
 	github.com/smarty/assertions v1.16.0
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/swag v1.16.6
