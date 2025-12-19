@@ -22,12 +22,47 @@ type (
 		isCreateSecureRequestMethodCalled bool
 		requestUrl                        string
 	}
+
+	multiResponseHttpExecutor struct {
+		responses                         map[string]*fasthttp.Response
+		isCreateSecureRequestMethodCalled bool
+		requestUrls                       []string
+	}
 )
 
 func (fakeHttpExecutor *fakeHttpExecutor) doRequest(_ context.Context, url string, _ string, _ []byte) (*fasthttp.Response, error) {
 	fakeHttpExecutor.isCreateSecureRequestMethodCalled = true
 	fakeHttpExecutor.requestUrl = url
 	return fakeHttpExecutor.response, nil
+}
+
+func (m *multiResponseHttpExecutor) doRequest(_ context.Context, url string, _ string, _ []byte) (*fasthttp.Response, error) {
+	m.isCreateSecureRequestMethodCalled = true
+	m.requestUrls = append(m.requestUrls, url)
+	if response, ok := m.responses[url]; ok {
+		return response, nil
+	}
+	// Return a default 200 response if URL not found in map
+	response := fasthttp.AcquireResponse()
+	response.SetStatusCode(200)
+	response.SetBody([]byte("[]"))
+	return response, nil
+}
+
+func newMultiResponseHttpExecutor() *multiResponseHttpExecutor {
+	return &multiResponseHttpExecutor{
+		responses:                         make(map[string]*fasthttp.Response),
+		isCreateSecureRequestMethodCalled: false,
+		requestUrls:                       make([]string, 0),
+	}
+}
+
+func (m *multiResponseHttpExecutor) addResponse(url string, responseBody interface{}, httpCode int) {
+	response := fasthttp.AcquireResponse()
+	responseByte, _ := json.Marshal(responseBody)
+	response.SetBody(responseByte)
+	response.SetStatusCode(httpCode)
+	m.responses[url] = response
 }
 
 func newFakeHttpExecutor(responseBody interface{}, httpCode int) *fakeHttpExecutor {
@@ -392,4 +427,215 @@ func assertResult(isValid bool, errorMessage string) {
 	if !isValid {
 		panic(errorMessage)
 	}
+}
+
+type routesTestData struct {
+	namespace        string
+	internalGateway  *url.URL
+	regularRoutes    []domain.Route
+	httpRoutes       []gatewayv1.HTTPRoute
+	grpcRoutes       []gatewayv1.GRPCRoute
+	regularRoutesUrl string
+	httpRoutesUrl    string
+	grpcRoutesUrl    string
+}
+
+func prepareRoutesTestData() routesTestData {
+	namespace := "test-namespace"
+	internalGateway, e := url.Parse("http://internal-gateway:8080")
+	if e != nil {
+		panic(e)
+	}
+
+	// Create regular routes
+	regularRoute := domain.Route{
+		Metadata: domain.Metadata{Name: "regular-route", Namespace: namespace},
+		Spec:     domain.RouteSpec{Host: "regular.example.com"},
+	}
+	regularRoutes := []domain.Route{regularRoute}
+
+	// Create HTTP routes
+	httpRoute := gatewayv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "http-route",
+			Namespace: namespace,
+		},
+		Spec: gatewayv1.HTTPRouteSpec{
+			Hostnames: []gatewayv1.Hostname{"http.example.com"},
+			Rules: []gatewayv1.HTTPRouteRule{
+				{
+					Matches: []gatewayv1.HTTPRouteMatch{
+						{Path: &gatewayv1.HTTPPathMatch{Value: strPtr("/api")}},
+					},
+					BackendRefs: []gatewayv1.HTTPBackendRef{
+						{BackendRef: gatewayv1.BackendRef{BackendObjectReference: gatewayv1.BackendObjectReference{Name: "svc-http", Port: portPtr(8080)}}},
+					},
+				},
+			},
+		},
+	}
+	httpRoutes := []gatewayv1.HTTPRoute{httpRoute}
+
+	// Create gRPC routes
+	grpcRoute := gatewayv1.GRPCRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "grpc-route",
+			Namespace: namespace,
+		},
+		Spec: gatewayv1.GRPCRouteSpec{
+			Hostnames: []gatewayv1.Hostname{"grpc.example.com"},
+			Rules: []gatewayv1.GRPCRouteRule{
+				{
+					BackendRefs: []gatewayv1.GRPCBackendRef{
+						{BackendRef: gatewayv1.BackendRef{BackendObjectReference: gatewayv1.BackendObjectReference{Name: "svc-grpc", Port: portPtr(9090)}}},
+					},
+				},
+			},
+		},
+	}
+	grpcRoutes := []gatewayv1.GRPCRoute{grpcRoute}
+
+	regularRoutesUrl := "http://internal-gateway:8080/api/v2/paas-mediation/namespaces/test-namespace/routes"
+	httpRoutesUrl := "http://internal-gateway:8080/api/v2/paas-mediation/namespaces/test-namespace/gateway/httproutes"
+	grpcRoutesUrl := "http://internal-gateway:8080/api/v2/paas-mediation/namespaces/test-namespace/gateway/grpcroutes"
+
+	return routesTestData{
+		namespace:        namespace,
+		internalGateway:  internalGateway,
+		regularRoutes:    regularRoutes,
+		httpRoutes:       httpRoutes,
+		grpcRoutes:       grpcRoutes,
+		regularRoutesUrl: regularRoutesUrl,
+		httpRoutesUrl:    httpRoutesUrl,
+		grpcRoutesUrl:    grpcRoutesUrl,
+	}
+}
+
+func TestGetRoutesWithoutCache_WithGatewayApiRoutesWatching(t *testing.T) {
+	testData := prepareRoutesTestData()
+
+	// Create mock executor with multiple responses
+	mockExecutor := newMultiResponseHttpExecutor()
+	mockExecutor.addResponse(testData.regularRoutesUrl, testData.regularRoutes, 200)
+	mockExecutor.addResponse(testData.httpRoutesUrl, testData.httpRoutes, 200)
+	mockExecutor.addResponse(testData.grpcRoutesUrl, testData.grpcRoutes, 200)
+
+	// Create client with gateway API routes watching enabled
+	paasClient := &PaasMediationClient{
+		httpExecutor:                   mockExecutor,
+		InternalGatewayAddress:         testData.internalGateway,
+		enableGatewayApiRoutesWatching: true,
+	}
+
+	// Call the function
+	routes, err := paasClient.getRoutesWithoutCache(context.Background(), testData.namespace)
+
+	// Assertions
+	assert.NoError(t, err)
+	assert.True(t, mockExecutor.isCreateSecureRequestMethodCalled)
+	assert.Equal(t, 3, len(mockExecutor.requestUrls))
+	assert.Contains(t, mockExecutor.requestUrls, testData.regularRoutesUrl)
+	assert.Contains(t, mockExecutor.requestUrls, testData.httpRoutesUrl)
+	assert.Contains(t, mockExecutor.requestUrls, testData.grpcRoutesUrl)
+
+	// Verify all routes are returned
+	assert.GreaterOrEqual(t, len(routes), 3, "Should have at least 3 routes (1 regular + 1 HTTP + 1 gRPC)")
+
+	// Verify regular route is present
+	foundRegular := false
+	for _, route := range routes {
+		if route.Metadata.Name == "regular-route" {
+			foundRegular = true
+			assert.Equal(t, "regular.example.com", route.Spec.Host)
+			break
+		}
+	}
+	assert.True(t, foundRegular, "Regular route should be present")
+
+	// Verify HTTP route is converted and present
+	foundHTTP := false
+	for _, route := range routes {
+		if route.Spec.Host == "http.example.com" {
+			foundHTTP = true
+			assert.Equal(t, "svc-http", route.Spec.Service.Name)
+			break
+		}
+	}
+	assert.True(t, foundHTTP, "HTTP route should be converted and present")
+
+	// Verify gRPC route is converted and present
+	foundGRPC := false
+	for _, route := range routes {
+		if route.Spec.Host == "grpc.example.com" {
+			foundGRPC = true
+			assert.Equal(t, "svc-grpc", route.Spec.Service.Name)
+			break
+		}
+	}
+	assert.True(t, foundGRPC, "gRPC route should be converted and present")
+}
+
+func TestGetRoutesWithoutCache_WithoutGatewayApiRoutesWatching(t *testing.T) {
+	testData := prepareRoutesTestData()
+
+	// Create mock executor - only regular routes should be requested
+	mockExecutor := newMultiResponseHttpExecutor()
+	mockExecutor.addResponse(testData.regularRoutesUrl, testData.regularRoutes, 200)
+	// HTTP and gRPC routes are set up but should NOT be requested when flag is disabled
+	mockExecutor.addResponse(testData.httpRoutesUrl, testData.httpRoutes, 200)
+	mockExecutor.addResponse(testData.grpcRoutesUrl, testData.grpcRoutes, 200)
+
+	// Create client with gateway API routes watching DISABLED
+	paasClient := &PaasMediationClient{
+		httpExecutor:                   mockExecutor,
+		InternalGatewayAddress:         testData.internalGateway,
+		enableGatewayApiRoutesWatching: false,
+	}
+
+	// Call the function
+	routes, err := paasClient.getRoutesWithoutCache(context.Background(), testData.namespace)
+
+	// Assertions
+	assert.NoError(t, err)
+	assert.True(t, mockExecutor.isCreateSecureRequestMethodCalled)
+	// Should only make 1 request (for regular routes)
+	assert.Equal(t, 1, len(mockExecutor.requestUrls))
+	assert.Contains(t, mockExecutor.requestUrls, testData.regularRoutesUrl)
+	// Should NOT request HTTP or gRPC routes
+	assert.NotContains(t, mockExecutor.requestUrls, testData.httpRoutesUrl)
+	assert.NotContains(t, mockExecutor.requestUrls, testData.grpcRoutesUrl)
+
+	// Verify only regular routes are returned
+	assert.Equal(t, 1, len(routes), "Should have only 1 regular route")
+
+	// Verify regular route is present
+	foundRegular := false
+	for _, route := range routes {
+		if route.Metadata.Name == "regular-route" {
+			foundRegular = true
+			assert.Equal(t, "regular.example.com", route.Spec.Host)
+			break
+		}
+	}
+	assert.True(t, foundRegular, "Regular route should be present")
+
+	// Verify HTTP route is NOT present
+	foundHTTP := false
+	for _, route := range routes {
+		if route.Spec.Host == "http.example.com" {
+			foundHTTP = true
+			break
+		}
+	}
+	assert.False(t, foundHTTP, "HTTP route should NOT be present when flag is disabled")
+
+	// Verify gRPC route is NOT present
+	foundGRPC := false
+	for _, route := range routes {
+		if route.Spec.Host == "grpc.example.com" {
+			foundGRPC = true
+			break
+		}
+	}
+	assert.False(t, foundGRPC, "gRPC route should NOT be present when flag is disabled")
 }
