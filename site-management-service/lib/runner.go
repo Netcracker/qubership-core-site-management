@@ -39,6 +39,7 @@ import (
 )
 
 const microservice_namespace = "microservice.namespace"
+const corePaasMediationGwApiEnabledKey = "core.paas.mediation.gw.api.enabled"
 
 var (
 	ctx, globalCancel = context.WithCancel(
@@ -85,8 +86,8 @@ func RunService() {
 		logger.Panicf("Error occurred while parsing internal Gateway URL: %v", err)
 	}
 	namespace := configloader.GetKoanf().MustString(microservice_namespace)
-
-	pmClient := paasMediationClient.NewClient(ctx, internalGatewayAddress, namespace)
+	enableGatewayApiRoutesWatching := configloader.GetKoanf().Bool(corePaasMediationGwApiEnabledKey)
+	pmClient := paasMediationClient.NewClient(ctx, internalGatewayAddress, namespace, enableGatewayApiRoutesWatching)
 
 	mailSender, err := messaging.NewMailSender(ctx)
 	if err != nil {
