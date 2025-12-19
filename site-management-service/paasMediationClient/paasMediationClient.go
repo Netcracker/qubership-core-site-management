@@ -54,12 +54,12 @@ type (
 	}
 
 	PaasMediationClient struct {
-		InternalGatewayAddress *url.URL
-		Namespace              string
-		cache                  *CompositeCache
-		httpExecutor           httpExecutor
-		callbacks              []RoutesCallback
-		enableGatewayRoutes    bool
+		InternalGatewayAddress         *url.URL
+		Namespace                      string
+		cache                          *CompositeCache
+		httpExecutor                   httpExecutor
+		callbacks                      []RoutesCallback
+		enableGatewayApiRoutesWatching bool
 	}
 
 	httpExecutor interface {
@@ -136,9 +136,9 @@ func NewClient(ctx context.Context, internalGatewayAddress *url.URL, namespace s
 		panic(fmt.Sprintf("Parameters \"internalGatewayAddress\" and \"idpAddress\" can not be empty!"))
 	}
 	client := &PaasMediationClient{
-		InternalGatewayAddress: internalGatewayAddress,
-		Namespace:              namespace,
-		enableGatewayRoutes:    enableGatewayRoutes,
+		InternalGatewayAddress:         internalGatewayAddress,
+		Namespace:                      namespace,
+		enableGatewayApiRoutesWatching: enableGatewayRoutes,
 	}
 	client.httpExecutor = createDefaultHttpExecutor()
 	client.initCompositeCache(ctx)
@@ -391,8 +391,8 @@ func (c *PaasMediationClient) getRoutesWithoutCache(ctx context.Context, namespa
 		return nil, err
 	}
 
-	logger.InfoC(ctx, "Gateway API routes enabled?: %t", c.enableGatewayRoutes)
-	if c.enableGatewayRoutes {
+	logger.InfoC(ctx, "Gateway API routes enabled?: %t", c.enableGatewayApiRoutesWatching)
+	if c.enableGatewayApiRoutesWatching {
 		buildUrl, err = c.buildUrl(ctx, namespace, httpRoutesString, "")
 		if err != nil {
 			logger.ErrorC(ctx, "Error occurred while building http route list url: %+v", err)
@@ -576,6 +576,14 @@ func (c *PaasMediationClient) GetAllRoutesFromCurrentNamespace(ctx context.Conte
 	return *routes, err
 }
 
+func (c *PaasMediationClient) createWebSocketClientsForRoutesInNamespace(ctx context.Context, namespace string, channel *chan []byte) {
+	CreateWebSocketClient(ctx, channel, c.InternalGatewayAddress.Host, namespace, routesString)
+	if c.enableGatewayApiRoutesWatching {
+		CreateWebSocketClientWithAdapter(ctx, channel, c.InternalGatewayAddress.Host, namespace, httpRoutesString, httpRouteAdapter)
+		CreateWebSocketClientWithAdapter(ctx, channel, c.InternalGatewayAddress.Host, namespace, grpcRoutesString, grpcRouteAdapter)
+	}
+}
+
 func (c *PaasMediationClient) GetRoutes(ctx context.Context, namespace string) (*[]domain.Route, error) {
 	if namespace == "" {
 		namespace = c.Namespace
@@ -589,11 +597,7 @@ func (c *PaasMediationClient) GetRoutes(ctx context.Context, namespace string) (
 	if !ok {
 		logger.WarnC(ctx, "Namespace %s was not found in cache, trying to get routes from paas-mediation service", namespace)
 		c.cache.routesCache.mutex.RUnlock()
-		CreateWebSocketClient(ctx, &c.cache.routesCache.bus, c.InternalGatewayAddress.Host, namespace, routesString)
-		if c.enableGatewayRoutes {
-			CreateWebSocketClientWithAdapter(ctx, &c.cache.routesCache.bus, c.InternalGatewayAddress.Host, namespace, httpRoutesString, httpRouteAdapter)
-			CreateWebSocketClientWithAdapter(ctx, &c.cache.routesCache.bus, c.InternalGatewayAddress.Host, namespace, grpcRoutesString, grpcRouteAdapter)
-		}
+		c.createWebSocketClientsForRoutesInNamespace(ctx, namespace, &c.cache.routesCache.bus)
 		for i := 0; ; i++ {
 			time.Sleep(sleepInit)
 			c.cache.routesCache.mutex.RLock()
@@ -1068,11 +1072,7 @@ func (c *PaasMediationClient) initRoutesCache(ctx context.Context, ch chan *Rout
 	}
 
 	channel := make(chan []byte, 50)
-	CreateWebSocketClient(ctx, &channel, c.InternalGatewayAddress.Host, c.Namespace, routesString)
-	if c.enableGatewayRoutes {
-		CreateWebSocketClientWithAdapter(ctx, &channel, c.InternalGatewayAddress.Host, c.Namespace, httpRoutesString, httpRouteAdapter)
-		CreateWebSocketClientWithAdapter(ctx, &channel, c.InternalGatewayAddress.Host, c.Namespace, grpcRoutesString, grpcRouteAdapter)
-	}
+	c.createWebSocketClientsForRoutesInNamespace(ctx, c.Namespace, &channel)
 
 	routesCache := RoutesCache{
 		mutex:     newMutex,

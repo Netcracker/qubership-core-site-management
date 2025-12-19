@@ -86,8 +86,8 @@ func RunService() {
 		logger.Panicf("Error occurred while parsing internal Gateway URL: %v", err)
 	}
 	namespace := configloader.GetKoanf().MustString(microservice_namespace)
-	enableGatewayRoutes := configloader.GetKoanf().Bool(corePaasMediationGwApiEnabledKey)
-	pmClient := paasMediationClient.NewClient(ctx, internalGatewayAddress, namespace, enableGatewayRoutes)
+	enableGatewayApiRoutesWatching := configloader.GetKoanf().Bool(corePaasMediationGwApiEnabledKey)
+	pmClient := paasMediationClient.NewClient(ctx, internalGatewayAddress, namespace, enableGatewayApiRoutesWatching)
 
 	mailSender, err := messaging.NewMailSender(ctx)
 	if err != nil {
