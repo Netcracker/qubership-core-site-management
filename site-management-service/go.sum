@@ -415,6 +415,8 @@ github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f h1:y5//uYreIhSUg3J
 github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f/go.mod h1:ZdcZmHo+o7JKHSa8/e818NopupXU1YMK5fe1lsApnBw=
 github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.2.1 h1:Oyi9/K/vfif6o1zTqE8q224zPHmNeXs2kqYMsL32+dk=
 github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.2.1/go.mod h1:+x2mbRx2Athud2sCCUUzPLg0mBn/yjI+8PCC9V0tyOg=
+github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.2.2 h1:sqTlmJf3KLHVVzWyEfh9Opd0g/HKO5Fm5KfYS/qxmtg=
+github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.2.2/go.mod h1:pZuRGCfcUekSUh7fwz98IVSGgXTO7B86pCjTEdMmSPM=
 github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.0.9 h1:mQczpHXDihCClAGAuB7DTDRoyK1x38W9+5M28QVPNaY=
 github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.0.9/go.mod h1:jrgI8Q03vhz6nNVFQg/iy9L2Ws6HG2WasaFKRxATbbA=
 github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.0.9 h1:ptKvKuBmTkDACnSL5jSigrl0ZVqyuoEEhACoy3S9hv4=
@@ -429,6 +431,8 @@ github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.1.5 h1:8WKZeCa
 github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.1.5/go.mod h1:rc2RuUcURPAiwrpNSmwHiWiDoFvAIhSUQ4M0gw7vZMk=
 github.com/netcracker/qubership-core-lib-go/v3 v3.2.5 h1:nvmyK/5Nk+lUJJg8JuB6VOVsIr5o+XZyEgjyPS7hW1Q=
 github.com/netcracker/qubership-core-lib-go/v3 v3.2.5/go.mod h1:5bgdMxXBTly4lJR5bjFhOM3DwXNrYSoRQwe8psPAFl0=
+github.com/netcracker/qubership-core-lib-go/v3 v3.3.0 h1:3AMiSLfur9QADXFzAs42sPK3SMSjxVU8Sr9OrwB+UXI=
+github.com/netcracker/qubership-core-lib-go/v3 v3.3.0/go.mod h1:5bgdMxXBTly4lJR5bjFhOM3DwXNrYSoRQwe8psPAFl0=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e h1:fD57ERR4JtEqsWbfPhv4DMiApHyliiK5xCTNVSPiaAs=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/onsi/ginkgo/v2 v2.21.0 h1:7rg/4f3rB88pb5obDgNZrNHrQ4e6WpjonchcpuBRnZM=
