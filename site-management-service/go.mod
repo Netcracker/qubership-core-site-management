@@ -22,7 +22,8 @@ require (
 	github.com/testcontainers/testcontainers-go v0.40.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.40.0
 	github.com/uptrace/bun v1.2.16
-	github.com/urfave/cli/v2 v2.27.7
+	github.com/urfave/cli/v2 v2.3.0
+	github.com/urfave/cli/v3 v3.6.1
 	github.com/valyala/fasthttp v1.68.0
 	k8s.io/apimachinery v0.34.3
 	sigs.k8s.io/gateway-api v1.4.1
