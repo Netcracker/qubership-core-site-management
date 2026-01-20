@@ -9,13 +9,13 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/mitchellh/hashstructure/v2 v2.0.2
-	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.2.2
-	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.0.10
-	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.0.10
-	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.2.2
-	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.1.6
-	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.1.6
-	github.com/netcracker/qubership-core-lib-go/v3 v3.3.0
+	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.2.3
+	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.0.11
+	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.0.11
+	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.2.3
+	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.1.7
+	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.1.7
+	github.com/netcracker/qubership-core-lib-go/v3 v3.3.1
 	github.com/smarty/assertions v1.16.0
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/swag v1.16.6
@@ -68,7 +68,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/hashicorp/consul/api v1.33.0 // indirect
+	github.com/hashicorp/consul/api v1.33.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.6.3 // indirect
@@ -80,7 +80,7 @@ require (
 	github.com/hashicorp/serf v0.10.2 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/pgx/v5 v5.7.6 // indirect
+	github.com/jackc/pgx/v5 v5.8.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -89,7 +89,7 @@ require (
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/parsers/yaml v1.0.0 // indirect
 	github.com/knadh/koanf/providers/env v1.1.0 // indirect
-	github.com/knadh/koanf/providers/file v1.2.0 // indirect
+	github.com/knadh/koanf/providers/file v1.2.1 // indirect
 	github.com/knadh/koanf/v2 v2.3.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
@@ -111,7 +111,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/netcracker/qubership-core-lib-go-error-handling/v3 v3.1.3 // indirect
+	github.com/netcracker/qubership-core-lib-go-error-handling/v3 v3.1.4 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/openzipkin/zipkin-go v0.4.3 // indirect
