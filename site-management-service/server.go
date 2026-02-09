@@ -6,6 +6,9 @@ import (
 	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/idp"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/lib"
+
+	// memlimit sets memory limit = 0.9 of cgroup memory limit
+	_ "github.com/netcracker/qubership-core-lib-go/v3/memlimit"
 )
 
 func init() {
