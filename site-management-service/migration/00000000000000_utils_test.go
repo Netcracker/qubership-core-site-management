@@ -78,7 +78,7 @@ func testMigration(t *testing.T, fail bool) {
 		migrator := migrate.NewMigrator(db, migrationsWithFail)
 		err = migrator.Init(ctx)
 		if err != nil {
-			log.PanicC(ctx, err.Error())
+			log.PanicC(ctx, "%s", err.Error())
 		}
 		err = runMigration(db, ctx, migrationsWithFail)
 		if err != nil && err.Error() != "error during migration execution: fail migration manually" {

@@ -528,12 +528,12 @@ func (s *Synchronizer) GetAnnotatedRoutesBulk(ctx context.Context, data *[]*doma
 			logger.DebugC(ctx, "Tenant '%s' is in active state or ignoreMissing is true", tenantScheme.TenantId)
 			routes, err := s.GetAnnotatedRoutes(ctx, tenantData, &tenantScheme)
 			if err != nil {
-				logger.ErrorC(ctx, "Error occurred while getting annotated routes for tenant '%s': %s", tenantData.TenantId, err.Error())
+				logger.ErrorC(ctx, "Error occurred while getting annotated routes for tenant '%v': %s", tenantData.TenantId, err.Error())
 			} else {
 				tenantData.Routes = *routes
 			}
 		} else {
-			logger.DebugC(ctx, "Tenant '%s' is not in active state and ignore missing parameter is false")
+			logger.DebugC(ctx, "Tenant '%s' is not in active state and ignore missing parameter is false", tenantScheme.TenantId)
 		}
 	}
 	return data, nil
@@ -725,7 +725,7 @@ func (s *Synchronizer) generateRoutesForServices(ctx context.Context, domainName
 			logger.DebugC(ctx, "For service '%s' generated url is '%s'", service.Metadata.Name, urlForService.String())
 			result[service.Metadata.Name] = domain.AddressList{domain.Address(urlForService.String())}
 		} else {
-			logger.ErrorC(ctx, "Url for service '%s' cannot be generated", service)
+			logger.ErrorC(ctx, "Url for service '%v' cannot be generated", service)
 			result[service.Metadata.Name] = domain.AddressList{""}
 		}
 	}
@@ -1195,7 +1195,7 @@ func New(dao *pg.RouteManagerDao, osClient *pmClient.PaasMediationClient, mailSe
 			// by now event is only one type and it's used only for wait for notification to run sync
 			<-sync.bus
 			if err := sync.processSynchronization(ctx); err != nil {
-				logger.ErrorC(ctx, err.Error())
+				logger.ErrorC(ctx, "%s", err.Error())
 			}
 		}
 	}()
@@ -1287,7 +1287,7 @@ func (s *Synchronizer) upsertTenantFromTM(ctx context.Context, tenant tm.Tenant)
 	}
 
 	if err := s.Upsert(ctx, tenantToUpdate); err != nil {
-		logger.ErrorC(ctx, "Failed to upsert tenant with ObjectId %v: %v", tenant.ObjectId)
+		logger.ErrorC(ctx, "Failed to upsert tenant with ObjectId %v: %v", tenant.ObjectId, err)
 		return errors.New(err)
 	}
 	return nil
@@ -1301,7 +1301,7 @@ func (s *Synchronizer) SyncTenantsWithTM(ctx context.Context, tenantEvent tm.Ten
 
 		if tenantEvent.Type == tm.EventTypeDeleted {
 			if err := s.DeleteTenant(ctx, tenantFromEvent.ObjectId); err != nil {
-				logger.ErrorC(ctx, "Failed to delete tenant with ObjectId %v: %v", tenantFromEvent.ObjectId)
+				logger.ErrorC(ctx, "Failed to delete tenant with ObjectId %v: %v", tenantFromEvent.ObjectId, err)
 				return errors.New(err)
 			}
 		} else {

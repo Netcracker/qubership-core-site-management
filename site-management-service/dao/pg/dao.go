@@ -65,7 +65,7 @@ func (v *RouteManagerDao) FindInitInformation(ctx context.Context) (*domain.Init
 }
 
 func (v *RouteManagerDao) SetInitInformation(ctx context.Context, data domain.Init) error {
-	logger.InfoC(ctx, "Upsert init information: %s", data)
+	logger.InfoC(ctx, "Upsert init information: %v", data)
 	_, err := v.usingDB(ctx, func(db *bun.DB) (interface{}, error) {
 		_, err := db.NewInsert().Model(&data).Exec(ctx)
 		return nil, err

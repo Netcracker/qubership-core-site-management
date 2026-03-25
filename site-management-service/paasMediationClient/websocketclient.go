@@ -81,8 +81,8 @@ func (c *WebSocketClient) initWebsocketClient(ctx context.Context, u url.URL) {
 		if err != nil {
 			if resp != nil {
 				b, _ := ioutil.ReadAll(resp.Body)
-				loggerWS.ErrorC(ctx, resp.Status)
-				loggerWS.ErrorC(ctx, string(b))
+				loggerWS.ErrorC(ctx, "%s", resp.Status)
+				loggerWS.ErrorC(ctx, "%s", string(b))
 			}
 			loggerWS.ErrorC(ctx, "dial error with url '%s': %s", u.String(), err)
 			time.Sleep(c.wsRetryInterval)

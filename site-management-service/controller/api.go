@@ -75,7 +75,7 @@ func (v *ApiHttpHandler) GetSite(c *fiber.Ctx) error {
 		return respondWithError(c, http.StatusBadRequest, "Tenant external id is not provided in request")
 	} else {
 		url := c.Get(URL)
-		logger.Info(url)
+		logger.InfoC(context, "%s", url)
 		if url == "" {
 			logger.ErrorC(context, "Error: %s", "URL is not specified")
 			return respondWithError(c, http.StatusBadRequest, "URL is not specified")
@@ -236,7 +236,7 @@ func (v *ApiHttpHandler) GetAll(c *fiber.Ctx) error {
 		for _, tenantDns := range *data {
 			tenantDns.FlattenAddressesToHosts()
 		}
-		logger.DebugC(context, "For all tenants found routes: %s", data)
+		logger.DebugC(context, "For all tenants found routes: %v", data)
 		return respondWithJson(c, http.StatusOK, data)
 	} else {
 		logger.DebugC(context, "No data found")
@@ -266,9 +266,9 @@ func (v *ApiHttpHandler) Validate(c *fiber.Ctx) error {
 		return respondWithError(c, http.StatusBadRequest, "Invalid request payload")
 	}
 
-	logger.DebugC(context, "Check endpoints: %s", data)
+	logger.DebugC(context, "Check endpoints: %v", data)
 	if result, err := v.Synchronizer.CheckCollisions(context, data); err != nil {
-		logger.ErrorC(context, "Error perform upsert of: %s, error: %s", data, err)
+		logger.ErrorC(context, "Error perform upsert of: %v, error: %s", data, err)
 		return respondWithError(c, http.StatusInternalServerError, err.Error())
 	} else {
 		logger.DebugC(context, "Provided Scheme is ok")
@@ -360,18 +360,18 @@ func (v *ApiHttpHandler) Upsert(c *fiber.Ctx) error {
 	if value := c.Query(Async, "true"); value == "false" {
 		async = false
 	}
-	logger.Infof("value %s", async)
+	logger.Infof("value %v", async)
 	logger.DebugC(context, "Flattening addresses (urls to hosts)")
 	// need to convert any address with url value (with scheme and path) to host only string
 	data.FlattenAddressesToHosts()
 
-	logger.DebugC(context, "Try upsert dao call with: %s", data)
+	logger.DebugC(context, "Try upsert dao call with: %v", data)
 	if err := v.Synchronizer.AwaitAction(context, async, func() error { return v.Synchronizer.Upsert(context, data) }); err != nil {
-		logger.ErrorC(context, "Error perform upsert of: %s. Error: %s", data, err.Error())
+		logger.ErrorC(context, "Error perform upsert of: %v. Error: %s", data, err.Error())
 		return respondWithError(c, http.StatusInternalServerError, err.Error())
 	}
 
-	logger.DebugC(context, "Upsert successfully performed for: %s", data)
+	logger.DebugC(context, "Upsert successfully performed for: %v", data)
 	return respondWithJson(c, http.StatusCreated, data)
 }
 
@@ -928,7 +928,7 @@ func (v *ApiHttpHandler) Search(c *fiber.Ctx) error {
 			return respondWithError(c, http.StatusBadRequest, "Host format is not valid")
 		}
 		if data, err := v.Synchronizer.FindAll(ctx); err == nil {
-			logger.DebugC(ctx, "For all tenants found routes: %s", data)
+			logger.DebugC(ctx, "For all tenants found routes: %v", data)
 			result := make([]domain.TenantDns, 0)
 			for _, tenant := range *data {
 				for _, services := range tenant.Sites {

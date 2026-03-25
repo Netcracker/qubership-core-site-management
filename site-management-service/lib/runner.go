@@ -132,7 +132,7 @@ func RunService() {
 		WithLogLevelsInfo().
 		Process()
 	if err != nil {
-		logger.Error("Error while create app because: " + err.Error())
+		logger.Errorf("Error while create app because: %s", err.Error())
 		return
 	}
 	controller := &controller.ApiHttpHandler{Synchronizer: sync, IDPClient: serviceloader.MustLoad[idp.RetryableClient]()}

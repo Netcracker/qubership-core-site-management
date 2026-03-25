@@ -222,7 +222,7 @@ func (cache *CompositeCache) updateServicesCache(ctx context.Context, serviceUpd
 		return
 	}
 
-	logger.DebugC(ctx, "Update services cache with service update %s for namespace %s", serviceUpdate, objectNamespace)
+	logger.DebugC(ctx, "Update services cache with service update %v for namespace %s", serviceUpdate, objectNamespace)
 	if updateType == updateTypeInit {
 		logger.DebugC(ctx, "Type is %s, init services cache for namespace '%s'", updateType, objectNamespace)
 		cache.servicesCache.mutex.Unlock()
@@ -272,7 +272,7 @@ func (cache *CompositeCache) updateConfigmapsCache(ctx context.Context, configMa
 		return
 	}
 
-	logger.DebugC(ctx, "Update cache ConfigMaps with configMap update %s for namespace %s of type %s", configMapUpdate, objectNamespace)
+	logger.DebugC(ctx, "Update cache ConfigMaps with configMap update %v for namespace %s of type %s", configMapUpdate, objectNamespace, updateType)
 	if updateType == updateTypeInit {
 		logger.DebugC(ctx, "Type is %s, init ConfigMaps cache for namespace '%s'", updateType, objectNamespace)
 		cache.configMapsCache.mutex.Unlock()
@@ -296,7 +296,7 @@ func (cache *CompositeCache) updateConfigmapsCache(ctx context.Context, configMa
 		}
 
 		if updateType == updateTypeCreated || updateType == updateTypeAdded || updateType == updateTypeModified {
-			logger.DebugC(ctx, "Type is %s, renew ConfigMaps %s with namespace in cache", updateType, objectName, objectNamespace)
+			logger.DebugC(ctx, "Type is %s, renew ConfigMaps %s with namespace %s in cache", updateType, objectName, objectNamespace)
 			namespacedConfigMap[objectName] = configMapUpdate.ConfigMapObject
 		} else if updateType == updateTypeDeleted {
 			logger.DebugC(ctx, "Type is DELETED, remove ConfigMap %s from cache from namespace %s", objectName, objectNamespace)
@@ -516,7 +516,7 @@ func (c *PaasMediationClient) buildUrl(ctx context.Context, namespace, resourceT
 	if resourceName != "" {
 		requestedUrl += "/" + resourceName
 	}
-	logger.DebugC(ctx, "Url for paas mediation was built: {}", requestedUrl)
+	logger.DebugC(ctx, "Url for paas mediation was built: %s", requestedUrl)
 	return requestedUrl, nil
 }
 
@@ -604,7 +604,7 @@ func (c *PaasMediationClient) GetRoutes(ctx context.Context, namespace string) (
 			if localCache, ok = c.cache.routesCache.routes[namespace]; !ok {
 				if i >= attemptsInit {
 					err := fmt.Errorf("Namespace %s was not found in routes cache after %v attempts", namespace, attemptsInit)
-					logger.ErrorC(ctx, err.Error())
+					logger.ErrorC(ctx, "%s", err.Error())
 					return nil, err
 				}
 				c.cache.routesCache.mutex.RUnlock()
@@ -660,7 +660,7 @@ func (c *PaasMediationClient) GetServices(ctx context.Context, namespace string)
 			if localCache, ok = c.cache.servicesCache.services[namespace]; !ok {
 				if i >= attemptsInit {
 					err := fmt.Errorf("Namespace %s was not found in services cache after %v attempts", namespace, attemptsInit)
-					logger.ErrorC(ctx, err.Error())
+					logger.ErrorC(ctx, "%s", err.Error())
 					return nil, err
 				}
 				c.cache.servicesCache.mutex.RUnlock()
@@ -716,7 +716,7 @@ func (c *PaasMediationClient) GetConfigMaps(ctx context.Context, namespace strin
 			if localCache, ok = c.cache.configMapsCache.configMaps[namespace]; !ok {
 				if i >= attemptsInit {
 					err := fmt.Errorf("Namespace %s was not found in ConfigMaps cache after %v attempts", namespace, attemptsInit)
-					logger.ErrorC(ctx, err.Error())
+					logger.ErrorC(ctx, "%s", err.Error())
 					return nil, err
 				}
 				c.cache.configMapsCache.mutex.RUnlock()
@@ -898,7 +898,7 @@ func (c *PaasMediationClient) CreateRoute(ctx context.Context, route *domain.Rou
 }
 
 func (c *PaasMediationClient) CreateService(ctx context.Context, service *domain.Service, namespace string) error {
-	logger.InfoC(ctx, "Create service %s for namespace %s", service, namespace)
+	logger.InfoC(ctx, "Create service %v for namespace %s", service, namespace)
 	buildUrl, err := c.buildUrl(ctx, namespace, servicesString, "")
 	if err != nil {
 		logger.ErrorC(ctx, "Error occurred while building url for creating service in namespace=%s: %+v", namespace, err)
@@ -911,7 +911,7 @@ func (c *PaasMediationClient) CreateService(ctx context.Context, service *domain
 	}
 	logger.DebugC(ctx, "Create service: %s", body)
 	if err = c.performRequest(ctx, buildUrl, fasthttp.MethodPost, body, fasthttp.StatusCreated, service); err != nil {
-		logger.ErrorC(ctx, "Error occurred while creating service in namespace=%s. \n\tService: \n%v\n\tError: %v", service, err)
+		logger.ErrorC(ctx, "Error occurred while creating service in namespace=%s. \n\tService: \n%v\n\tError: %v", namespace, service, err)
 		return err
 	}
 	logger.InfoC(ctx, "Service %s was successfully created in namespace %s. Result: %+v", service.Metadata.Name, namespace, service)
@@ -934,7 +934,7 @@ func (c *PaasMediationClient) UpdateOrCreateRoute(ctx context.Context, route *do
 	}
 	logger.DebugC(ctx, "Update route: %s", body)
 	if err = c.performRequest(ctx, buildUrl, fasthttp.MethodPut, body, fasthttp.StatusOK, route); err != nil {
-		logger.ErrorC(ctx, "Error occurred while updating route in namespace=%s. \n\tRoute: \n%v\n\tError: %v", route.FormatString("\t\t"), err)
+		logger.ErrorC(ctx, "Error occurred while updating route in namespace=%s. \n\tRoute: \n%v\n\tError: %v", namespace, route.FormatString("\t\t"), err)
 		return err
 	}
 	logger.InfoC(ctx, "Route %s was successfully updated in namespace %s. Result: %+v", route.Metadata.Name, namespace, route)
@@ -943,7 +943,7 @@ func (c *PaasMediationClient) UpdateOrCreateRoute(ctx context.Context, route *do
 }
 
 func (c *PaasMediationClient) UpdateOrCreateService(ctx context.Context, service *domain.Service, namespace string) error {
-	logger.InfoC(ctx, "Update service %s for namespace %s", service, namespace)
+	logger.InfoC(ctx, "Update service %v for namespace %s", service, namespace)
 	buildUrl, err := c.buildUrl(ctx, namespace, servicesString, "")
 	if err != nil {
 		logger.ErrorC(ctx, "Error occurred while building url for updating service in namespace=%s: %+v", namespace, err)
@@ -956,7 +956,7 @@ func (c *PaasMediationClient) UpdateOrCreateService(ctx context.Context, service
 	}
 	logger.DebugC(ctx, "Update service: %s", body)
 	if err = c.performRequest(ctx, buildUrl, fasthttp.MethodPut, body, fasthttp.StatusOK, service); err != nil {
-		logger.ErrorC(ctx, "Error occurred while updating service in namespace=%s. \n\tService: \n%v\n\tError: %v", service, err)
+		logger.ErrorC(ctx, "Error occurred while updating service in namespace=%s. \n\tService: \n%v\n\tError: %v", namespace, service, err)
 		return err
 	}
 	logger.InfoC(ctx, "Service %s was successfully updated in namespace %s. Result: %+v", service.Metadata.Name, namespace, service)
