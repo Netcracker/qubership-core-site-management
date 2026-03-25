@@ -81,7 +81,7 @@ func testMigration(t *testing.T, fail bool) {
 			log.PanicC(ctx, "%s", err.Error())
 		}
 		err = runMigration(db, ctx, migrationsWithFail)
-		if err != nil && err.Error() != "error during migration execution: fail migration manually" {
+		if err != nil && err.Error() != "error during migration execution: 00000000000000: up: fail migration manually" {
 			log.PanicC(ctx, "Can't migrate existing schema: %v", err)
 		}
 	}
