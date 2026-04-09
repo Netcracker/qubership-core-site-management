@@ -13,7 +13,7 @@ require (
 	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.4.0
 	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.3.5
 	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.5.5
-	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.4.4
+	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.5.0
 	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.4.5
 	github.com/netcracker/qubership-core-lib-go/v3 v3.8.0
 	github.com/smarty/assertions v1.16.0
@@ -69,7 +69,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/hashicorp/consul/api v1.33.5 // indirect
+	github.com/hashicorp/consul/api v1.34.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.6.3 // indirect
