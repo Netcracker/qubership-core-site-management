@@ -115,6 +115,8 @@ spec:
                 {{ end }}
                 -   name: CORE_PAAS_MEDIATION_GW_API_ENABLED
                     value: '{{ .Values.CORE_PAAS_MEDIATION_GW_API_ENABLED }}'
+                -   name: SERVICE_MESH_TYPE
+                    value: '{{ .Values.SERVICE_MESH_TYPE }}'
                 resources:
                     requests:
                         cpu: '{{ .Values.CPU_REQUEST }}'
