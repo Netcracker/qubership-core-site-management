@@ -1,4 +1,5 @@
 {{- if eq .Values.SERVICE_MESH_TYPE "Istio" }}
+# Internal routes
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -15,9 +16,9 @@ spec:
       name: {{ .Values.INTERNAL_SERVICE_NAME }}
   rules:
     - matches:
-      - path:
-          type: PathPrefix
-          value: "/api/v1/{{ .Values.SERVICE_NAME }}"
+        - path:
+            type: PathPrefix
+            value: "/api/v1/{{ .Values.SERVICE_NAME }}"
       filters:
         - type: URLRewrite
           urlRewrite:
@@ -28,9 +29,9 @@ spec:
         - name: {{ .Values.SERVICE_NAME }}
           port: 8080
     - matches:
-      - path:
-          type: PathPrefix
-          value: "/api/v4/tenant-manager/manage/tenants/current/service/name"
+        - path:
+            type: PathPrefix
+            value: "/api/v4/tenant-manager/manage/tenants/current/service/name"
       filters:
         - type: URLRewrite
           urlRewrite:
@@ -41,19 +42,20 @@ spec:
         - name: {{ .Values.SERVICE_NAME }}
           port: 8080
     - matches:
-      - path:
-          type: PathPrefix
-          value: "/api/v4/tenant-manager/activate/create-os-tenant-alias-routes/perform/{tenantId}"
+        - path:
+            type: PathPrefix
+            value: "/api/v4/tenant-manager/activate/create-os-tenant-alias-routes/perform/"
       filters:
         - type: URLRewrite
           urlRewrite:
             path:
               type: ReplacePrefixMatch
-              replacePrefixMatch: "/api/v1/activate/create-os-tenant-alias-routes/perform/{tenantId}"
+              replacePrefixMatch: "/api/v1/activate/create-os-tenant-alias-routes/perform/"
       backendRefs:
         - name: {{ .Values.SERVICE_NAME }}
           port: 8080
 ---
+# Public routes
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -66,12 +68,12 @@ metadata:
     app.kubernetes.io/managed-by: Helm
 spec:
   parentRefs:
-      name: {{ .Values.ISTIO_PUBLIC_GATEWAY_NAME }}
+    - name: {{ .Values.ISTIO_PUBLIC_GATEWAY_NAME }}
   rules:
     - matches:
-      - path:
-          type: PathPrefix
-          value: "/api/v1/{{ .Values.SERVICE_NAME }}"
+        - path:
+            type: PathPrefix
+            value: "/api/v1/{{ .Values.SERVICE_NAME }}"
       filters:
         - type: URLRewrite
           urlRewrite:
@@ -82,9 +84,9 @@ spec:
         - name: {{ .Values.SERVICE_NAME }}
           port: 8080
     - matches:
-      - path:
-          type: PathPrefix
-          value: "/api/v4/tenant-manager/manage/tenants/current/service/name"
+        - path:
+            type: PathPrefix
+            value: "/api/v4/tenant-manager/manage/tenants/current/service/name"
       filters:
         - type: URLRewrite
           urlRewrite:
