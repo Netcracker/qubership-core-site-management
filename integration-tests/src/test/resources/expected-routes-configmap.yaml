@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: site-management-expected-routes
+data:
+  routes.json: |
+    {
+      "internal": [
+        "/api/v4/tenant-manager/manage/tenants/current/service/name",
+        "/api/v4/tenant-manager/activate/create-os-tenant-alias-routes/perform/"
+      ],
+      "public": [
+        "/api/v1/site-management/routes",
+        "/api/v4/tenant-manager/manage/tenants/current/service/name"
+      ]
+    }
