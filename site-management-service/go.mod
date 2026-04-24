@@ -9,13 +9,13 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/mitchellh/hashstructure/v2 v2.0.2
-	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.6.0
-	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.4.0
-	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.3.5
-	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.5.5
-	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.5.0
-	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.4.5
-	github.com/netcracker/qubership-core-lib-go/v3 v3.8.0
+	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.5.4
+	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.4.1-0.20260424143018-e5d8e5443c76
+	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.3.4
+	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.5.4
+	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.5.1-0.20260424142016-67686722ec50
+	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.4.4
+	github.com/netcracker/qubership-core-lib-go/v3 v3.7.4-0.20260423122038-9835751e44b7
 	github.com/smarty/assertions v1.16.0
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/swag v1.16.6
@@ -64,6 +64,7 @@ require (
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/spec v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.1 // indirect
+	github.com/go-pkgz/expirable-cache/v3 v3.1.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gofiber/adaptor/v2 v2.2.1 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
