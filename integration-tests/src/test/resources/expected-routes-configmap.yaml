@@ -7,7 +7,7 @@ data:
     {
       "internal": [
         "/api/v4/tenant-manager/manage/tenants/current/service/name",
-        "/api/v4/tenant-manager/activate/create-os-tenant-alias-routes/perform/"
+        "/api/v4/tenant-manager/activate/create-os-tenant-alias-routes/perform/tenantId"
       ],
       "public": [
         "/api/v1/site-management/routes",

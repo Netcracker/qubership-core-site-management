@@ -260,7 +260,14 @@ public class ExpectedRoutesIT {
                 return;
             }
             
-            assertTrue(code < 500, "Route should be accessible, got: " + code);
+            if (expectedStatus == 200) {
+                assertTrue(code != 404,
+                    String.format("Route %s on %s gateway should be accessible, got %d", 
+                        path, gatewayType, code));
+            } else {
+                assertEquals(expectedStatus, code,
+                    String.format("Route %s on %s gateway returned unexpected status", path, gatewayType));
+            }
             return;
         }
         
