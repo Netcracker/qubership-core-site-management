@@ -5,7 +5,7 @@ go 1.26.2
 require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-errors/errors v1.5.1
-	github.com/gofiber/fiber/v2 v2.52.12
+	github.com/gofiber/fiber/v2 v2.52.13
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/mitchellh/hashstructure/v2 v2.0.2
