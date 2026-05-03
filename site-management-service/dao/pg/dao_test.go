@@ -9,6 +9,7 @@ import (
 	pgdbaas "github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4"
 	"github.com/netcracker/qubership-core-lib-go/v3/configloader"
 	"github.com/netcracker/qubership-core-lib-go/v3/security"
+	restclient "github.com/netcracker/qubership-core-lib-go/v3/security/rest"
 	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/migration"
@@ -59,6 +60,7 @@ func (suite *DaoTestSuit) SetupSuite() {
 			http.NotFoundHandler().ServeHTTP(w, r)
 		}
 	}))
+	restclient.DefaultDbaasAgentUrl = suite.server.URL
 	prepareTestEnvironment(suite.server.URL)
 	configloader.Init(configloader.EnvPropertySource())
 }

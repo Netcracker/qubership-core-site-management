@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
+	"github.com/netcracker/qubership-core-lib-go/v3/security"
+	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
 	"github.com/stretchr/testify/assert"
 	"github.com/valyala/fasthttp"
 	"testing"
@@ -14,6 +16,10 @@ const (
 	tenant2 = "tenant_2"
 	tenant3 = "tenant_3"
 )
+
+func init() {
+	serviceloader.Register(1, &security.DummyToken{})
+}
 
 func TestClient_GetActiveTenantsCache(t *testing.T) {
 	ctx := context.Background()

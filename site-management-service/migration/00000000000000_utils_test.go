@@ -18,6 +18,7 @@ import (
 	pgdbaas "github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4"
 	"github.com/netcracker/qubership-core-lib-go/v3/configloader"
 	"github.com/netcracker/qubership-core-lib-go/v3/security"
+	restclient "github.com/netcracker/qubership-core-lib-go/v3/security/rest"
 	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/testharness"
 	"github.com/stretchr/testify/assert"
@@ -58,6 +59,7 @@ func testMigration(t *testing.T, fail bool) {
 		}
 	}))
 	defer server.Close()
+	restclient.DefaultDbaasAgentUrl = server.URL
 	prepareTestEnvironment(server.URL)
 	configloader.Init(configloader.EnvPropertySource())
 
