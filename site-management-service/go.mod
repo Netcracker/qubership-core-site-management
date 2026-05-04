@@ -11,7 +11,7 @@ require (
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.6.2
 	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.4.2
-	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.3.6
+	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.3.7
 	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.5.7
 	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.5.2
 	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.4.7
