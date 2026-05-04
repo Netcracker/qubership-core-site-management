@@ -15,7 +15,7 @@ require (
 	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.5.6
 	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.5.1
 	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.4.6
-	github.com/netcracker/qubership-core-lib-go/v3 v3.8.1
+	github.com/netcracker/qubership-core-lib-go/v3 v3.9.0
 	github.com/smarty/assertions v1.16.0
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/swag v1.16.6
