@@ -6,7 +6,7 @@ metadata:
   name: '{{ .Values.SERVICE_NAME }}-internal-routes'
   labels:
     app.kubernetes.io/name: '{{ printf "%s-internal-routes" .Values.SERVICE_NAME }}'
-    app.kubernetes.io/instance: '{{ printf "%s-internal-routes-%s" .Values.SERVICE_NAME .Values.NAMESPACE | trunc 63 | trimSuffix "-" }'
+    app.kubernetes.io/instance: '{{ printf "%s-internal-routes-%s" .Values.SERVICE_NAME .Values.NAMESPACE | trunc 63 | trimSuffix "-" }}'
     app.kubernetes.io/version: '{{ .Chart.AppVersion }}'
     app.kubernetes.io/component: '{{ .Values.SERVICE_NAME }}'
     app.kubernetes.io/part-of: 'Cloud-Core'
@@ -66,7 +66,7 @@ metadata:
   name: '{{ .Values.SERVICE_NAME }}-public-routes'
   labels:
     app.kubernetes.io/name: '{{ printf "%s-public-routes" .Values.SERVICE_NAME }}'
-    app.kubernetes.io/instance: '{{ printf "%s-public-routes-%s" .Values.SERVICE_NAME .Values.NAMESPACE | trunc 63 | trimSuffix "-" }'
+    app.kubernetes.io/instance: '{{ printf "%s-public-routes-%s" .Values.SERVICE_NAME .Values.NAMESPACE | trunc 63 | trimSuffix "-" }}'
     app.kubernetes.io/version: '{{ .Chart.AppVersion }}'
     app.kubernetes.io/component: '{{ .Values.SERVICE_NAME }}'
     app.kubernetes.io/part-of: 'Cloud-Core'
