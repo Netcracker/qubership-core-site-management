@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -38,8 +39,8 @@ import (
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
 )
 
-const microservice_namespace = "microservice.namespace"
-const corePaasMediationGwApiEnabledKey = "core.paas.mediation.gw.api.enabled"
+const microserviceNamespaceConfigKey = "microservice.namespace"
+const gatewaySystemTypeConfigKey = "gateway.system.type"
 
 var (
 	ctx, globalCancel = context.WithCancel(
@@ -85,8 +86,9 @@ func RunService() {
 	if err != nil {
 		logger.Panicf("Error occurred while parsing internal Gateway URL: %v", err)
 	}
-	namespace := configloader.GetKoanf().MustString(microservice_namespace)
-	enableGatewayApiRoutesWatching := configloader.GetKoanf().Bool(corePaasMediationGwApiEnabledKey)
+	namespace := configloader.GetKoanf().MustString(microserviceNamespaceConfigKey)
+	gatewaySystemType := strings.ToLower(configloader.GetKoanf().String(gatewaySystemTypeConfigKey))
+	enableGatewayApiRoutesWatching := strings.Contains(gatewaySystemType, "gateway-api-default")
 	pmClient := paasMediationClient.NewClient(ctx, internalGatewayAddress, namespace, enableGatewayApiRoutesWatching)
 
 	mailSender, err := messaging.NewMailSender(ctx)
@@ -223,6 +225,6 @@ func createSiteManagementClassifier(ctx context.Context) map[string]interface{} 
 	classifier["microserviceName"] = configloader.GetKoanf().MustString("microservice.name")
 	classifier["scope"] = "service"
 	classifier["dbClassifier"] = "default"
-	classifier["namespace"] = configloader.GetKoanf().MustString(microservice_namespace)
+	classifier["namespace"] = configloader.GetKoanf().MustString(microserviceNamespaceConfigKey)
 	return classifier
 }

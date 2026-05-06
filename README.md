@@ -30,17 +30,17 @@ This documentation describes Site Management REST API. It contains:
 Site Management is a microservice that processes cloud project external routes.
 
 # Environment Variables 
-| Environment Variable         | Description                                                  | Default Value                                                         | 
-|------------------------------|--------------------------------------------------------------|-----------------------------------------------------------------------|
-| SERVICE_URL_DEFAULT_PROTO    | Route protocol (deprecated, CLOUD_PROTOCOL automatically used instead)                                               | https                                                                 | 
-| CONFIG_SERVER                | Address of config-server                                     | `http://config-server:8080` (or `https://config-server:8443`)         | 
-| IDENTITY_PROVIDER_URL        | Address of identity-provider                                 | `http://identity-provider:8080` (or `https://identity-provider:8443`) | 
-| PAAS_MEDIATION_ADDRESS       | Address of paas-mediation                                    | `http://paas-mediation:8080` (or `https://paas-mediation:8443`)       |
-| TENANT_DEFAULT_DOMAIN_ZONE   | Default domain zone for tenant                               | None                                                                  | 
-| TRACING_ENABLED              | Is tracing enabled                                           | false                                                                 |
-| TRACING_HOST                 | Tracing server host                                          | None                                                                  |
-| TRACING_SAMPLER_RATELIMITING | The rate for requests sampling (number of traces per second) | 10                                                                    |
-| CORE_PAAS_MEDIATION_GW_API_ENABLED | Feature flag to enable gateway-api routes (HTTP and gRPC) requests from paas-mediation | false |
+| Environment Variable         | Description                                                                                                                                                    | Default Value                                                         | 
+|------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
+| SERVICE_URL_DEFAULT_PROTO    | Route protocol (deprecated, CLOUD_PROTOCOL automatically used instead)                                                                                         | https                                                                 | 
+| CONFIG_SERVER                | Address of config-server                                                                                                                                       | `http://config-server:8080` (or `https://config-server:8443`)         | 
+| IDENTITY_PROVIDER_URL        | Address of identity-provider                                                                                                                                   | `http://identity-provider:8080` (or `https://identity-provider:8443`) | 
+| PAAS_MEDIATION_ADDRESS       | Address of paas-mediation                                                                                                                                      | `http://paas-mediation:8080` (or `https://paas-mediation:8443`)       |
+| TENANT_DEFAULT_DOMAIN_ZONE   | Default domain zone for tenant                                                                                                                                 | None                                                                  | 
+| TRACING_ENABLED              | Is tracing enabled                                                                                                                                             | false                                                                 |
+| TRACING_HOST                 | Tracing server host                                                                                                                                            | None                                                                  |
+| TRACING_SAMPLER_RATELIMITING | The rate for requests sampling (number of traces per second)                                                                                                   | 10                                                                    |
+| GATEWAY_SYSTEM_TYPE          | Feature flag to enable gateway-api routes (HTTP and gRPC) requests from paas-mediation (legacy-ingress;gateway-api-default;legacy-ingress,gateway-api-default) | legacy-ingress                                                        |
 
 
 # PUBLIC REST API
