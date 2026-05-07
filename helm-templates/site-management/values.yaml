@@ -19,3 +19,7 @@ CONSUL_ENABLED: false
 CONSUL_URL: ''
 
 GATEWAY_SYSTEM_TYPE: legacy-ingress
+
+ISTIO_PUBLIC_GATEWAY_NAME: 'public-gateway'
+INTERNAL_SERVICE_NAME: "internal-gateway-service"
+SERVICE_MESH_TYPE: 'Core' # Options: Core, Istio

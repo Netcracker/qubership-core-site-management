@@ -115,6 +115,8 @@ spec:
                 {{ end }}
                 -   name: GATEWAY_SYSTEM_TYPE
                     value: '{{ .Values.GATEWAY_SYSTEM_TYPE }}'
+                -   name: SERVICE_MESH_TYPE
+                    value: '{{ .Values.SERVICE_MESH_TYPE }}'
                 resources:
                     requests:
                         cpu: '{{ .Values.CPU_REQUEST }}'
