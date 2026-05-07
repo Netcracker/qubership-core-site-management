@@ -113,8 +113,8 @@ spec:
                 -   name: CONSUL_URL
                     value: '{{ .Values.CONSUL_URL }}'
                 {{ end }}
-                -   name: CORE_PAAS_MEDIATION_GW_API_ENABLED
-                    value: '{{ .Values.CORE_PAAS_MEDIATION_GW_API_ENABLED }}'
+                -   name: GATEWAY_SYSTEM_TYPE
+                    value: '{{ .Values.GATEWAY_SYSTEM_TYPE }}'
                 -   name: SERVICE_MESH_TYPE
                     value: '{{ .Values.SERVICE_MESH_TYPE }}'
                 resources:
