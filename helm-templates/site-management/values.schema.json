@@ -530,6 +530,19 @@
       "title": "The INTERNAL_SERVICE_NAME schema",
       "description": "Internal gateway service name.",
       "internal": true
+    },
+
+    "GATEWAY_SYSTEM_TYPE": {
+      "$id": "#/properties/GATEWAY_SYSTEM_TYPE",
+      "type": "string",
+      "title": "Gateway System Type",
+      "internal": true,
+      "examples": [
+        "legacy-ingress",
+        "legacy-ingress,gateway-api-default",
+        "gateway-api-default"
+      ],
+      "description": "The mode of Gateway that applications must apply during installation. The value can be \"legacy-ingress\", \"gateway-api-default\" or \"legacy-ingress, gateway-api-default\". \n\nApplications must use contains  helm condition in Helm charts."
     }
   },
   "additionalProperties": true
