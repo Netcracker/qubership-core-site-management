@@ -3,18 +3,25 @@ package tm_test
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/go-errors/errors"
 	dbaasbase "github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3"
 	pgdbaas "github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4"
 	stompws "github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3"
 	"github.com/netcracker/qubership-core-lib-go/v3/configloader"
+	"github.com/netcracker/qubership-core-lib-go/v3/security"
+	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/tm"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"sync"
-	"testing"
-	"time"
 )
+
+func init() {
+	serviceloader.Register(1, &security.DummyToken{})
+}
 
 type wsConnectorMock struct {
 	ConnectAndSubMock func(context.Context, string, string) (*stompws.Subscription, error)
