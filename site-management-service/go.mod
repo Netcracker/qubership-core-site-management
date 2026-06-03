@@ -9,10 +9,10 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/mitchellh/hashstructure/v2 v2.0.2
-	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.7.0
+	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.7.3
 	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.5.0
 	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.4.0
-	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.6.0
+	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.6.4
 	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.6.0
 	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.5.0
 	github.com/netcracker/qubership-core-lib-go/v3 v3.11.0
