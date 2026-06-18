@@ -13,9 +13,9 @@ require (
 	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.5.0
 	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.4.0
 	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.6.0
-	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.6.0
+	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.7.0
 	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.5.0
-	github.com/netcracker/qubership-core-lib-go/v3 v3.11.0
+	github.com/netcracker/qubership-core-lib-go/v3 v3.11.1
 	github.com/smarty/assertions v1.16.0
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/swag v1.16.6
@@ -91,7 +91,7 @@ require (
 	github.com/knadh/koanf/parsers/yaml v1.0.0 // indirect
 	github.com/knadh/koanf/providers/env v1.1.0 // indirect
 	github.com/knadh/koanf/providers/file v1.2.1 // indirect
-	github.com/knadh/koanf/v2 v2.3.4 // indirect
+	github.com/knadh/koanf/v2 v2.3.5 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
 	github.com/mailru/easyjson v0.9.1 // indirect
