@@ -1,7 +1,7 @@
 # ============== DEPLOYMENT VARIABLES ============================
 MONITORING_ENABLED: true
 CLOUD_TOPOLOGY_KEY: kubernetes.io/hostname
-READONLY_CONTAINER_FILE_SYSTEM_ENABLED: false
+READONLY_CONTAINER_FILE_SYSTEM_ENABLED: true
 IMAGE_REPOSITORY: 'ghcr.io/netcracker/qubership-core-site-management'
 
 # ============== SERVICE VARIABLES ============================
