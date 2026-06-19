@@ -9,10 +9,10 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/mitchellh/hashstructure/v2 v2.0.2
-	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.10.0
+	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.10.1
 	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.5.1
 	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.4.1
-	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.9.0
+	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.9.1
 	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.7.0
 	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.5.1
 	github.com/netcracker/qubership-core-lib-go/v3 v3.11.1
@@ -144,12 +144,12 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
-	go.opentelemetry.io/contrib/propagators/b3 v1.42.0 // indirect
-	go.opentelemetry.io/otel v1.43.0 // indirect
-	go.opentelemetry.io/otel/exporters/zipkin v1.43.0 // indirect
-	go.opentelemetry.io/otel/metric v1.43.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
-	go.opentelemetry.io/otel/trace v1.43.0 // indirect
+	go.opentelemetry.io/contrib/propagators/b3 v1.44.0 // indirect
+	go.opentelemetry.io/otel v1.44.0 // indirect
+	go.opentelemetry.io/otel/exporters/zipkin v1.44.0 // indirect
+	go.opentelemetry.io/otel/metric v1.44.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
+	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa // indirect
