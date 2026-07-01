@@ -15,6 +15,7 @@ import (
 	"github.com/netcracker/qubership-core-lib-go/v3/security"
 	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
+	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
 )
 
 var loggerWS logging.Logger
@@ -33,6 +34,7 @@ type (
 		createWebsocketConnect(targetAddress url.URL, header http.Header) (*websocket.Conn, *http.Response, error)
 	}
 	defaultWebsocketExecutor struct {
+		getToken func(context.Context) (string, error)
 	}
 	Adapter func(t []byte) ([][]byte, error)
 )
@@ -51,7 +53,7 @@ func CreateWebSocketClientWithAdapter(ctx context.Context, channel *chan []byte,
 		bus:               *channel,
 		namespace:         namespace,
 		resource:          resource,
-		websocketExecutor: &defaultWebsocketExecutor{},
+		websocketExecutor: &defaultWebsocketExecutor{getToken: utils.GetTokenFunc()},
 		adapter:           adapter,
 		wsRetryInterval:   configloader.GetKoanf().Duration("paas-mediation.ws-retry-interval"),
 	}
@@ -135,8 +137,7 @@ func (*defaultWebsocketExecutor) createWebsocketConnect(targetAddress url.URL, h
 }
 
 func (websocketExecutor *defaultWebsocketExecutor) collectHeaders(ctx context.Context, url url.URL) (http.Header, error) {
-	m2mTokenProvider := serviceloader.MustLoad[security.TokenProvider]()
-	m2mToken, err := m2mTokenProvider.GetToken(ctx)
+	m2mToken, err := websocketExecutor.getToken(ctx)
 	if err != nil {
 		loggerWS.ErrorC(ctx, "Error during acquiring m2m token: %+v", err)
 		return nil, err

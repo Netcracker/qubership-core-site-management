@@ -3,19 +3,22 @@ package utils
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
+	"os"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/go-errors/errors"
 	"github.com/gorilla/websocket"
 	"github.com/netcracker/qubership-core-lib-go/v3/configloader"
 	"github.com/netcracker/qubership-core-lib-go/v3/context-propagation/ctxhelper"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
 	"github.com/netcracker/qubership-core-lib-go/v3/security"
+	"github.com/netcracker/qubership-core-lib-go/v3/security/tokensource"
 	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
 	"github.com/valyala/fasthttp"
-	"net/http"
-	"net/url"
-	"strconv"
-	"sync"
-	"time"
 )
 
 type utilConfig struct {
@@ -28,7 +31,6 @@ var configOnce = sync.Once{}
 var config *utilConfig = nil
 
 func createConfig() {
-	tokenProvider := serviceloader.MustLoad[security.TokenProvider]()
 	httpclient := &fasthttp.Client{
 		MaxIdleConnDuration:           30 * time.Second,
 		DisableHeaderNamesNormalizing: true,
@@ -36,7 +38,7 @@ func createConfig() {
 		DialDualStack:                 true,
 	}
 	config = &utilConfig{
-		getToken: tokenProvider.GetToken,
+		getToken: GetTokenFunc(),
 		do:       httpclient.Do,
 		client:   httpclient,
 	}
@@ -163,4 +165,14 @@ func addHeaderIfAbsent(requestHeaders http.Header, headerName, headerValue strin
 		requestHeaders.Add(headerName, headerValue)
 	}
 	return requestHeaders
+}
+
+func GetTokenFunc() func(ctx context.Context) (string, error) {
+	k8sM2mEnabled, _ := strconv.ParseBool(os.Getenv("KUBERNETES_M2M_ENABLED"))
+	if k8sM2mEnabled {
+		return func(ctx context.Context) (string, error) {
+			return tokensource.GetAudienceToken(ctx, tokensource.AudienceNetcracker)
+		}
+	}
+	return serviceloader.MustLoad[security.TokenProvider]().GetToken
 }
