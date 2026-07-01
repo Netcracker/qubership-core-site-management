@@ -543,6 +543,14 @@
         "gateway-api-default"
       ],
       "description": "The mode of Gateway that applications must apply during installation. The value can be \"legacy-ingress\", \"gateway-api-default\" or \"legacy-ingress, gateway-api-default\". \n\nApplications must use contains  helm condition in Helm charts."
+    },
+    "KUBERNETES_M2M_ENABLED": {
+      "$id": "#/properties/KUBERNETES_M2M_ENABLED",
+      "type": "boolean",
+      "title": "The KUBERNETES_M2M_ENABLED schema",
+      "description": "Shows that kubernetes m2m communication is enabled.",
+      "internal": true,
+      "default": false
     }
   },
   "additionalProperties": true
