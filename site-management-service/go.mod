@@ -9,13 +9,13 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/mitchellh/hashstructure/v2 v2.0.2
-	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.10.3
-	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.5.3
-	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.4.3
-	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.9.3
-	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.7.2
-	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.5.3
-	github.com/netcracker/qubership-core-lib-go/v3 v3.12.0
+	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.10.2
+	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.5.2
+	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.4.2
+	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.9.2
+	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.7.1
+	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.5.2
+	github.com/netcracker/qubership-core-lib-go/v3 v3.11.3-0.20260702051537-7b215e5c0b56
 	github.com/smarty/assertions v1.16.0
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/swag v1.16.6

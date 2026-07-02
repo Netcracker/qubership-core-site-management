@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -16,8 +15,6 @@ import (
 	"github.com/netcracker/qubership-core-lib-go/v3/context-propagation/ctxhelper"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
 	"github.com/netcracker/qubership-core-lib-go/v3/security"
-	"github.com/netcracker/qubership-core-lib-go/v3/security/tokensource"
-	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
 	"github.com/valyala/fasthttp"
 )
 
@@ -38,7 +35,7 @@ func createConfig() {
 		DialDualStack:                 true,
 	}
 	config = &utilConfig{
-		getToken: GetTokenFunc(),
+		getToken: security.GetTokenFunc(),
 		do:       httpclient.Do,
 		client:   httpclient,
 	}
@@ -165,14 +162,4 @@ func addHeaderIfAbsent(requestHeaders http.Header, headerName, headerValue strin
 		requestHeaders.Add(headerName, headerValue)
 	}
 	return requestHeaders
-}
-
-func GetTokenFunc() func(ctx context.Context) (string, error) {
-	k8sM2mEnabled, _ := strconv.ParseBool(os.Getenv("KUBERNETES_M2M_ENABLED"))
-	if k8sM2mEnabled {
-		return func(ctx context.Context) (string, error) {
-			return tokensource.GetAudienceToken(ctx, tokensource.AudienceNetcracker)
-		}
-	}
-	return serviceloader.MustLoad[security.TokenProvider]().GetToken
 }

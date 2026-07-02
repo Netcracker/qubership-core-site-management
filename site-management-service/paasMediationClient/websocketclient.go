@@ -13,9 +13,7 @@ import (
 	"github.com/netcracker/qubership-core-lib-go/v3/configloader"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
 	"github.com/netcracker/qubership-core-lib-go/v3/security"
-	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
-	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
 )
 
 var loggerWS logging.Logger
@@ -53,7 +51,7 @@ func CreateWebSocketClientWithAdapter(ctx context.Context, channel *chan []byte,
 		bus:               *channel,
 		namespace:         namespace,
 		resource:          resource,
-		websocketExecutor: &defaultWebsocketExecutor{getToken: utils.GetTokenFunc()},
+		websocketExecutor: &defaultWebsocketExecutor{getToken: security.GetTokenFunc()},
 		adapter:           adapter,
 		wsRetryInterval:   configloader.GetKoanf().Duration("paas-mediation.ws-retry-interval"),
 	}
