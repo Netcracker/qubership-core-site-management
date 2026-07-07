@@ -24,7 +24,7 @@ require (
 	github.com/uptrace/bun v1.2.18
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/valyala/fasthttp v1.72.0
-	k8s.io/apimachinery v0.36.1
+	k8s.io/apimachinery v0.36.2
 	sigs.k8s.io/gateway-api v1.6.0
 	sigs.k8s.io/yaml v1.6.0
 )
