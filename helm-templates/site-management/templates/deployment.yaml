@@ -75,12 +75,12 @@ spec:
               - name: topology
                 configMap:
                   name: topology
-{{ if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
-            -   name: sslcerts
+{{- if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
+              - name: sslcerts
                 emptyDir: {}
-            -   name: cacerts
+              - name: cacerts
                 emptyDir: {}
-{{ end }}
+{{- end }}
             containers:
             -   name: '{{ .Values.SERVICE_NAME }}'
                 image: '{{ .Values.IMAGE_REPOSITORY }}:{{ .Values.TAG }}'
@@ -146,10 +146,10 @@ spec:
                         memory: '{{ .Values.MEMORY_LIMIT }}'
                         cpu: '{{ .Values.CPU_LIMIT }}'
                 securityContext:
-{{ if eq .Values.PAAS_PLATFORM "KUBERNETES" }}
+{{- if eq .Values.PAAS_PLATFORM "KUBERNETES" }}
                     runAsUser: 10001
                     runAsGroup: 10001
-{{ end }}
+{{- end }}
                     readOnlyRootFilesystem: {{ and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
                     runAsNonRoot: true
                     seccompProfile:
@@ -165,12 +165,12 @@ spec:
                   - name: topology
                     mountPath: /etc/topology
                     readOnly: true
-{{ if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
-                -   name: sslcerts
+{{- if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
+                  - name: sslcerts
                     mountPath: /etc/ssl/certs
-                -   name: cacerts
+                  - name: cacerts
                     mountPath: /usr/local/share/ca-certificates
-{{ end }}
+{{- end }}
                 livenessProbe:
                     httpGet:
                         path: /health
