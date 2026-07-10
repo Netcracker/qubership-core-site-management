@@ -551,6 +551,16 @@
       "description": "Shows that kubernetes m2m communication is enabled.",
       "internal": true,
       "default": false
+    },
+    "API_DBAAS_ADDRESS": {
+      "$id": "#/properties/API_DBAAS_ADDRESS",
+      "type": "string",
+      "title": "The API_DBAAS_ADDRESS schema",
+      "description": "Hostname Dbaas Server.",
+      "examples": [
+        "http://dbaas-aggregator.dbaas:8080"
+      ],
+      "internal": true
     }
   },
   "additionalProperties": true
