@@ -3,7 +3,10 @@ package controller
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/gofiber/fiber/v2"
+	"net/http"
+	"strings"
+
+	"github.com/gofiber/fiber/v3"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/exceptions"
@@ -11,8 +14,6 @@ import (
 	mdomain "github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/synchronizer"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/tm"
-	"net/http"
-	"strings"
 )
 
 const (
@@ -67,8 +68,8 @@ func init() {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/routes/{tenantId}/site [get]
-func (v *ApiHttpHandler) GetSite(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) GetSite(c fiber.Ctx) error {
+	context := c.Context()
 
 	if tenantId := c.Params(TenantId); tenantId == "" {
 		logger.ErrorC(context, "Incorrect request: vars doesn't contain `tenantExternalId' key")
@@ -117,8 +118,8 @@ func (v *ApiHttpHandler) GetSite(c *fiber.Ctx) error {
 // @Failure 500 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Router /api/v1/tenants/current/service/name [get]
-func (v *ApiHttpHandler) GetServiceName(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) GetServiceName(c fiber.Ctx) error {
+	context := c.Context()
 	tenantId := c.Get(Tenant)
 
 	if tenantId == "" {
@@ -147,11 +148,11 @@ func (v *ApiHttpHandler) GetServiceName(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/tenants [post]
-func (v *ApiHttpHandler) RegisterTenant(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) RegisterTenant(c fiber.Ctx) error {
+	context := c.Context()
 
 	var tenant tm.Tenant
-	if err := c.BodyParser(&tenant); err != nil {
+	if err := c.Bind().Body(&tenant); err != nil {
 		return respondWithError(c, http.StatusBadRequest, "Invalid request payload")
 	}
 	logger.InfoC(context, "Received request to register tenant: %v", tenant)
@@ -175,8 +176,8 @@ func (v *ApiHttpHandler) RegisterTenant(c *fiber.Ctx) error {
 // @Success 200 {object} domain.Realms
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/trusted-hosts [get]
-func (v *ApiHttpHandler) GetRealms(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) GetRealms(c fiber.Ctx) error {
+	context := c.Context()
 	showAllTenants := false
 	if show := c.Query(ShowAllTenants, "false"); show == "true" {
 		showAllTenants = true
@@ -202,8 +203,8 @@ func (v *ApiHttpHandler) GetRealms(c *fiber.Ctx) error {
 // @Success 200 {array} domain.Realm
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/trusted-hosts/{tenantId} [get]
-func (v *ApiHttpHandler) GetRealm(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) GetRealm(c fiber.Ctx) error {
+	context := c.Context()
 	realm := c.Params(TenantId)
 
 	if data, err := v.Synchronizer.GetRealm(context, realm); err == nil {
@@ -225,8 +226,8 @@ func (v *ApiHttpHandler) GetRealm(c *fiber.Ctx) error {
 // @Success 200 {array} domain.TenantDns
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/routes [get]
-func (v *ApiHttpHandler) GetAll(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) GetAll(c fiber.Ctx) error {
+	context := c.Context()
 	mergeGeneral := true
 	if merge := c.Query(Merge, "true"); merge == "false" {
 		mergeGeneral = false
@@ -256,8 +257,8 @@ func (v *ApiHttpHandler) GetAll(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/validate [post]
-func (v *ApiHttpHandler) Validate(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) Validate(c fiber.Ctx) error {
+	context := c.Context()
 
 	var data domain.TenantDns
 	decoder := json.NewDecoder(bytes.NewReader(c.Body()))
@@ -290,8 +291,8 @@ func (v *ApiHttpHandler) Validate(c *fiber.Ctx) error {
 // @Success 200 {object} domain.TenantDns
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/routes/{tenantId} [get]
-func (v *ApiHttpHandler) Get(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) Get(c fiber.Ctx) error {
+	context := c.Context()
 
 	if tenantId := c.Params(TenantId); tenantId == "" {
 		logger.ErrorC(context, "Incorrect request: vars doesn't contain `tenantId' key")
@@ -343,8 +344,8 @@ func (v *ApiHttpHandler) Get(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/routes [post]
-func (v *ApiHttpHandler) Upsert(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) Upsert(c fiber.Ctx) error {
+	context := c.Context()
 	logger.InfoC(context, "Start upsert api call")
 
 	var data domain.TenantDns
@@ -388,7 +389,7 @@ func (v *ApiHttpHandler) Upsert(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/routes [put]
-func (v *ApiHttpHandler) UpsertUpdate(c *fiber.Ctx) error {
+func (v *ApiHttpHandler) UpsertUpdate(c fiber.Ctx) error {
 	return v.Upsert(c)
 }
 
@@ -404,8 +405,8 @@ func (v *ApiHttpHandler) UpsertUpdate(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/routes/{tenantId}/restore-tenant-alias [post]
-func (v *ApiHttpHandler) RestoreTenantAlias(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) RestoreTenantAlias(c fiber.Ctx) error {
+	context := c.Context()
 	var data *domain.TenantDns
 	var err error
 	tenantId := c.Params(TenantId)
@@ -455,8 +456,8 @@ func (v *ApiHttpHandler) RestoreTenantAlias(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/routes/{tenantId} [delete]
-func (v *ApiHttpHandler) Delete(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) Delete(c fiber.Ctx) error {
+	context := c.Context()
 
 	if tenantId := c.Params(TenantId); tenantId == "" {
 		logger.ErrorC(context, "Incorrect request: vars doesn't contain `tenantId' key")
@@ -488,8 +489,8 @@ func (v *ApiHttpHandler) Delete(c *fiber.Ctx) error {
 // @Security ApiKeyAuth
 // @Success 200
 // @Router /api/v1/sync [post]
-func (v *ApiHttpHandler) Sync(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) Sync(c fiber.Ctx) error {
+	context := c.Context()
 	logger.InfoC(context, "Force routes sync by external request")
 	v.Synchronizer.Sync(context)
 	return nil
@@ -504,8 +505,8 @@ func (v *ApiHttpHandler) Sync(c *fiber.Ctx) error {
 // @Security ApiKeyAuth
 // @Success 200
 // @Router /api/v1/reset-caches [post]
-func (v *ApiHttpHandler) ResetCaches(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) ResetCaches(c fiber.Ctx) error {
+	context := c.Context()
 	logger.InfoC(context, "Force reset caches by external request")
 	return respondWithJson(c, http.StatusOK, "")
 }
@@ -522,11 +523,11 @@ func (v *ApiHttpHandler) ResetCaches(c *fiber.Ctx) error {
 // @Failure 500 {object} map[string]string
 // @Failure 403 {object} map[string]string
 // @Router /api/v1/openshift-routes [get]
-func (v *ApiHttpHandler) ListOpenShiftRoutes(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) ListOpenShiftRoutes(c fiber.Ctx) error {
+	context := c.Context()
 	logger.DebugC(context, "Requesting openshift routes")
 	queryArgsMap := make(map[string][]string)
-	c.Context().QueryArgs().VisitAll(func(key, value []byte) {
+	c.RequestCtx().QueryArgs().VisitAll(func(key, value []byte) {
 		queryArgsMap[string(key)] = strings.Split(string(value), ",")
 	})
 
@@ -554,8 +555,8 @@ func (v *ApiHttpHandler) ListOpenShiftRoutes(c *fiber.Ctx) error {
 // @Failure 500 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Router /api/v1/annotated-routes-bulk [post]
-func (v *ApiHttpHandler) ListAnnotatedRoutesBulk(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) ListAnnotatedRoutesBulk(c fiber.Ctx) error {
+	context := c.Context()
 	logger.DebugC(context, "Requesting annotated routes bulk")
 
 	var data *[]*domain.TenantData
@@ -593,8 +594,8 @@ func (v *ApiHttpHandler) ListAnnotatedRoutesBulk(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/identity-provider-route [get]
-func (v *ApiHttpHandler) GetIdpRoute(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) GetIdpRoute(c fiber.Ctx) error {
+	context := c.Context()
 	logger.DebugC(context, "Requesting annotated routes")
 	if tenantIdParam := c.Query(TenantId); len(tenantIdParam) != 0 {
 		tenantId := tenantIdParam
@@ -656,8 +657,8 @@ func (v *ApiHttpHandler) GetIdpRoute(c *fiber.Ctx) error {
 // @Failure 404 {object} map[string]string
 // @Router /api/v1/annotated-routes [get]
 // Returns list of services able being publicated via routes
-func (v *ApiHttpHandler) ListAnnotatedRoutes(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) ListAnnotatedRoutes(c fiber.Ctx) error {
+	context := c.Context()
 	logger.DebugC(context, "Requesting annotated routes")
 	if tenantIdParam := c.Query(TenantId); len(tenantIdParam) != 0 {
 		tenantId := tenantIdParam
@@ -714,8 +715,8 @@ func (v *ApiHttpHandler) ListAnnotatedRoutes(c *fiber.Ctx) error {
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/public-services [get]
 // Returns list of services able being publicated via routes
-func (v *ApiHttpHandler) ListPublicServices(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) ListPublicServices(c fiber.Ctx) error {
+	context := c.Context()
 	logger.DebugC(context, "Requesting public services")
 	namespaces := make([]string, 0)
 	if value := c.Query(Namespaces); len(value) != 0 {
@@ -742,8 +743,8 @@ func (v *ApiHttpHandler) ListPublicServices(c *fiber.Ctx) error {
 // @Failure 500 {object} map[string]string
 // @Failure default {string} string
 // @Router /api/v1/routes/{tenantId}/activate [post]
-func (v *ApiHttpHandler) ActivateTenant(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) ActivateTenant(c fiber.Ctx) error {
+	context := c.Context()
 	if tenantId := c.Params(TenantId); tenantId == "" {
 		logger.ErrorC(context, "Incorrect request: vars doesn't contain `tenantId' key")
 		return respondWithError(c, http.StatusBadRequest, "Tenant id is not provided in request")
@@ -775,8 +776,8 @@ func (v *ApiHttpHandler) ActivateTenant(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/routes/{tenantId}/deactivate [post]
-func (v *ApiHttpHandler) DeactivateTenant(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) DeactivateTenant(c fiber.Ctx) error {
+	context := c.Context()
 	if tenantId := c.Params(TenantId); tenantId == "" {
 		logger.ErrorC(context, "Incorrect request: vars doesn't contain `tenantId' key")
 		return respondWithError(c, http.StatusBadRequest, "Tenant id is not provided in request")
@@ -809,8 +810,8 @@ func (v *ApiHttpHandler) DeactivateTenant(c *fiber.Ctx) error {
 // @Failure 500 {object} map[string]string
 // @Failure default {string} string
 // @Router /api/v1/tenants/{tenantId} [delete]
-func (v *ApiHttpHandler) DeleteTenant(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) DeleteTenant(c fiber.Ctx) error {
+	context := c.Context()
 	if tenantId := c.Params(TenantId, ""); tenantId == "" {
 		logger.ErrorC(context, "Incorrect request: vars doesn't contain `tenantId' key")
 		return respondWithError(c, http.StatusBadRequest, "Tenant id is not provided in request")
@@ -843,8 +844,8 @@ func (v *ApiHttpHandler) DeleteTenant(c *fiber.Ctx) error {
 // @Failure 500 {object} map[string]string
 // @Failure default {string} string
 // @Router /api/v1/activate/create-os-tenant-alias-routes/perform/{tenantId} [post]
-func (v *ApiHttpHandler) CreateTenantRoute(c *fiber.Ctx) error {
-	context := c.UserContext()
+func (v *ApiHttpHandler) CreateTenantRoute(c fiber.Ctx) error {
+	context := c.Context()
 	tenantId := c.Params(TenantId, "")
 	if tenantId == "" {
 		logger.ErrorC(context, "Incorrect request: vars doesn't contain `tenantId' key")
@@ -897,8 +898,8 @@ func (v *ApiHttpHandler) CreateTenantRoute(c *fiber.Ctx) error {
 // @Success 200
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/routes/sync-idp [post]
-func (v *ApiHttpHandler) SyncIDP(c *fiber.Ctx) error {
-	ctx := c.UserContext()
+func (v *ApiHttpHandler) SyncIDP(c fiber.Ctx) error {
+	ctx := c.Context()
 	v.IDPClient.Reset()
 	if err := v.Synchronizer.SendRoutesToIDP(ctx); err != nil {
 		return respondWithError(c, http.StatusInternalServerError, err.Error())
@@ -919,8 +920,8 @@ func (v *ApiHttpHandler) SyncIDP(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /api/v1/search [get]
-func (v *ApiHttpHandler) Search(c *fiber.Ctx) error {
-	ctx := c.UserContext()
+func (v *ApiHttpHandler) Search(c fiber.Ctx) error {
+	ctx := c.Context()
 	if host := c.Query(Host); len(host) != 0 {
 		address := domain.Address(host)
 		host := address.Host()
@@ -962,24 +963,24 @@ func (v *ApiHttpHandler) Search(c *fiber.Ctx) error {
 // @Security ApiKeyAuth
 // @Success 200 {array}  domain.CustomService
 // @Router /api/v1/tenants/current/services [get]
-func (v *ApiHttpHandler) GetTenantCurrentServices(ctx *fiber.Ctx) error {
+func (v *ApiHttpHandler) GetTenantCurrentServices(ctx fiber.Ctx) error {
 	var scheme *domain.TenantDns
 	var err error
-	logger.InfoC(ctx.UserContext(), "Get tenant current services")
+	logger.InfoC(ctx.Context(), "Get tenant current services")
 
 	forwardedProto := strings.Split(strings.ToLower(ctx.Get("X-Forwarded-Proto", "")), ",")[0]
-	logger.DebugC(ctx.UserContext(), "X-Forwarded-Proto = %s", forwardedProto)
+	logger.DebugC(ctx.Context(), "X-Forwarded-Proto = %s", forwardedProto)
 
 	externalId := ctx.Get(Tenant)
 	if externalId != "" {
-		logger.DebugC(ctx.UserContext(), "Get urls for tenant with id = %s", externalId)
-		scheme, err = v.Synchronizer.FindByExternalTenantId(ctx.UserContext(), externalId, "", false, false)
-		logger.DebugC(ctx.UserContext(), "tenant from tenant-manager = %v", scheme)
+		logger.DebugC(ctx.Context(), "Get urls for tenant with id = %s", externalId)
+		scheme, err = v.Synchronizer.FindByExternalTenantId(ctx.Context(), externalId, "", false, false)
+		logger.DebugC(ctx.Context(), "tenant from tenant-manager = %v", scheme)
 		if err != nil {
 			return err
 		}
 	} else {
-		logger.WarnC(ctx.UserContext(), "Empty tenantId")
+		logger.WarnC(ctx.Context(), "Empty tenantId")
 		scheme = &domain.TenantDns{TenantId: ""}
 	}
 
@@ -992,9 +993,9 @@ func (v *ApiHttpHandler) GetTenantCurrentServices(ctx *fiber.Ctx) error {
 
 	var services *[]mdomain.CustomService
 	if *tenantData.TenantId != "" {
-		services, err = v.Synchronizer.GetAnnotatedRoutesForTenant(ctx.UserContext(), &tenantData)
+		services, err = v.Synchronizer.GetAnnotatedRoutesForTenant(ctx.Context(), &tenantData)
 	} else {
-		services, err = v.Synchronizer.GetAnnotatedRoutes(ctx.UserContext(), &tenantData, scheme)
+		services, err = v.Synchronizer.GetAnnotatedRoutes(ctx.Context(), &tenantData, scheme)
 	}
 
 	if err != nil {
@@ -1003,18 +1004,18 @@ func (v *ApiHttpHandler) GetTenantCurrentServices(ctx *fiber.Ctx) error {
 	return respondWithJson(ctx, http.StatusOK, services)
 }
 
-func respondWithError(c *fiber.Ctx, code int, msg string) error {
+func respondWithError(c fiber.Ctx, code int, msg string) error {
 	return respondWithJson(c, code, map[string]string{"error": msg})
 }
 
-func respondWithJson(c *fiber.Ctx, code int, payload interface{}) error {
+func respondWithJson(c fiber.Ctx, code int, payload interface{}) error {
 	return c.Status(code).JSON(payload)
 }
 
-func respondWithoutBody(c *fiber.Ctx, code int) error {
+func respondWithoutBody(c fiber.Ctx, code int) error {
 	return c.Status(code).JSON("")
 }
 
-func respondWithString(c *fiber.Ctx, code int, response string) error {
+func respondWithString(c fiber.Ctx, code int, response string) error {
 	return c.Status(code).SendString(response)
 }
