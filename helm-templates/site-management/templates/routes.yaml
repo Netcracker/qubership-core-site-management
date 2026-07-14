@@ -32,6 +32,9 @@ spec:
       backendRefs:
         - name: {{ .Values.SERVICE_NAME }}
           port: 8080
+          group: ""
+          kind: Service
+          weight: 1
     - matches:
         - path:
             type: PathPrefix
@@ -45,6 +48,9 @@ spec:
       backendRefs:
         - name: {{ .Values.SERVICE_NAME }}
           port: 8080
+          group: ""
+          kind: Service
+          weight: 1
     - matches:
         - path:
             type: PathPrefix
@@ -58,6 +64,9 @@ spec:
       backendRefs:
         - name: {{ .Values.SERVICE_NAME }}
           port: 8080
+          group: ""
+          kind: Service
+          weight: 1
 ---
 # Public routes
 apiVersion: gateway.networking.k8s.io/v1
@@ -76,6 +85,8 @@ metadata:
 spec:
   parentRefs:
     - name: {{ .Values.ISTIO_PUBLIC_GATEWAY_NAME }}
+      group: "gateway.networking.k8s.io"
+      kind: Gateway
   rules:
     - matches:
         - path:
@@ -90,6 +101,9 @@ spec:
       backendRefs:
         - name: {{ .Values.SERVICE_NAME }}
           port: 8080
+          group: ""
+          kind: Service
+          weight: 1
     - matches:
         - path:
             type: PathPrefix
@@ -103,4 +117,7 @@ spec:
       backendRefs:
         - name: {{ .Values.SERVICE_NAME }}
           port: 8080
+          group: ""
+          kind: Service
+          weight: 1
 {{- end }}
