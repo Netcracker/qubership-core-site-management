@@ -322,8 +322,8 @@ github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRW
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.10.5 h1:F4co2VqmzgSqBDL8tx24kWeAwputHR5FmsvlxFE/NfA=
 github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.10.5/go.mod h1:p2e7+mWAInOScha9kAhjFS+QwtomXah1zwB40gnL5SQ=
-github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.5.5 h1:x2+a3ayV2rZlCB4pvK7Klh3rcD85kzNMFugSh5lZO14=
-github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.5.5/go.mod h1:NdZ3q97P04LrzcWiYw1SLiWoUqeFs9Iz0lX4eAxnJYc=
+github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.6.0 h1:Yne6hKSJBRvwFhP1ZpLK8J18kyg6FchqrHDSeZ11DRA=
+github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.6.0/go.mod h1:2CBDc7+mn1bnMTMWGCYrVVQyP7MRWWHkiJXSYO4o67I=
 github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.4.5 h1:qke+aKqmdw4uB8tjhX6Oc1LYDRWhczdt+quE5AvREHw=
 github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.4.5/go.mod h1:CuuEJIOyPitZzRXwGLWG9nbOc5BmJpkZnh2vMBgkDbU=
 github.com/netcracker/qubership-core-lib-go-error-handling/v3 v3.6.3 h1:9I7j5cjqUUJT310j7mRH+vJeI3D8A7yNtn2HrumFkck=
@@ -334,8 +334,8 @@ github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.7.4 h1:8h+erGKZnrkk
 github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.7.4/go.mod h1:maxGzPy5d+1LflNkImmUu+Z0UcFLYwxjAlB+D4JXgm8=
 github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.5.5 h1:z/O3m8hk1EraMgiYe++0w9uU2YiLnoQgeSOMZkplvo4=
 github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.5.5/go.mod h1:+qhmCItvwDSgq/Xj0sLQud8npZJGnaPq0TNXD0gitFE=
-github.com/netcracker/qubership-core-lib-go/v3 v3.13.1 h1:dq8ZT1mtvf9YLYjEupq9djxUu9vgVGNiZoWQnnsUMWc=
-github.com/netcracker/qubership-core-lib-go/v3 v3.13.1/go.mod h1:DJg7ebBI1IZqlc1PbqaCB1OFtX3+zULmtpHmDMCmeZw=
+github.com/netcracker/qubership-core-lib-go/v3 v3.13.2 h1:Yu3YTmbBtkYN6IFSQxIhStk3kYG9a5hF/cMjnPG2sDg=
+github.com/netcracker/qubership-core-lib-go/v3 v3.13.2/go.mod h1:BDEPYlyUqVzR11oHg0jUJ/lndcRuyJ5bPmg3PnTfxMY=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.1 h1:y0fUlFfIZhPF1W537XOLg0/fcx6zcHCJwooC2xJA040=
