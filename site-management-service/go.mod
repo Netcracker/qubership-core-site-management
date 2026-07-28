@@ -1,6 +1,6 @@
 module github.com/netcracker/qubership-core-site-management/site-management-service/v2
 
-go 1.26.5
+go 1.26.4
 
 require (
 	github.com/ghodss/yaml v1.0.0
