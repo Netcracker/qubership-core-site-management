@@ -52,6 +52,16 @@ func NormalizeRouteKind(route *Route) {
 	}
 }
 
+// IndexRoutesByCacheKey indexes routes by kind/name cache key.
+func IndexRoutesByCacheKey(routes []Route) map[string]Route {
+	indexed := make(map[string]Route, len(routes))
+	for i := range routes {
+		NormalizeRouteKind(&routes[i])
+		indexed[RouteCacheKey(routes[i])] = routes[i]
+	}
+	return indexed
+}
+
 func (r Route) GetPriority() int {
 	if value, ok := r.Metadata.Annotations["netcracker.cloud/tenant.service.tenant.id"]; ok && value == "GENERAL" {
 		return -1

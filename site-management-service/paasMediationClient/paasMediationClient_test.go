@@ -157,15 +157,6 @@ func TestUpdateRoutesCache_HTTPRouteAndGRPCRouteSameName(t *testing.T) {
 	namespace := "cloud-core"
 	routeName := "cloud-administrator"
 
-	compositeCacheTest := &CompositeCache{
-		routesCache: &RoutesCache{
-			mutex: &sync.RWMutex{},
-			routes: map[string]*map[string]domain.Route{
-				namespace: {},
-			},
-		},
-	}
-
 	httpRoute := domain.Route{
 		Metadata: domain.Metadata{
 			Kind:      domain.RouteKindHTTP,
@@ -177,11 +168,6 @@ func TestUpdateRoutesCache_HTTPRouteAndGRPCRouteSameName(t *testing.T) {
 			Service: domain.Target{Name: "cloud-administrator-fe"},
 		},
 	}
-	compositeCacheTest.updateRoutesCache(context.Background(), &RouteUpdate{
-		Type:        updateTypeAdded,
-		RouteObject: httpRoute,
-	})
-
 	grpcRoute := domain.Route{
 		Metadata: domain.Metadata{
 			Kind:      domain.RouteKindGRPC,
@@ -193,32 +179,121 @@ func TestUpdateRoutesCache_HTTPRouteAndGRPCRouteSameName(t *testing.T) {
 			Service: domain.Target{Name: "tenant-self-service-backend-v1"},
 		},
 	}
-	compositeCacheTest.updateRoutesCache(context.Background(), &RouteUpdate{
-		Type:        updateTypeAdded,
-		RouteObject: grpcRoute,
-	})
+
+	compositeCacheTest := newRoutesCompositeCache(namespace)
+
+	for _, updateType := range []string{updateTypeAdded, updateTypeCreated, updateTypeModified} {
+		t.Run(updateType, func(t *testing.T) {
+			cache := newRoutesCompositeCache(namespace)
+			cache.updateRoutesCache(context.Background(), &RouteUpdate{Type: updateType, RouteObject: httpRoute})
+			cache.updateRoutesCache(context.Background(), &RouteUpdate{Type: updateType, RouteObject: grpcRoute})
+
+			routesRes := *cache.routesCache.routes[namespace]
+			assert.Len(t, routesRes, 2)
+			assert.Equal(t, "test-hhtproute.example.com", routesRes[domain.RouteCacheKey(httpRoute)].Spec.Host)
+			assert.Equal(t, "test-grpsroute.example.com", routesRes[domain.RouteCacheKey(grpcRoute)].Spec.Host)
+		})
+	}
+
+	compositeCacheTest.updateRoutesCache(context.Background(), &RouteUpdate{Type: updateTypeAdded, RouteObject: httpRoute})
+	compositeCacheTest.updateRoutesCache(context.Background(), &RouteUpdate{Type: updateTypeAdded, RouteObject: grpcRoute})
+	compositeCacheTest.updateRoutesCache(context.Background(), &RouteUpdate{Type: updateTypeDeleted, RouteObject: grpcRoute})
 
 	routesRes := *compositeCacheTest.routesCache.routes[namespace]
-	assert.Equal(t, 2, len(routesRes))
-
-	cachedHTTPRoute := routesRes[domain.RouteCacheKey(httpRoute)]
-	assert.Equal(t, "test-hhtproute.example.com", cachedHTTPRoute.Spec.Host)
-	assert.Equal(t, domain.RouteKindHTTP, cachedHTTPRoute.Metadata.Kind)
-
-	cachedGRPCRoute := routesRes[domain.RouteCacheKey(grpcRoute)]
-	assert.Equal(t, "test-grpsroute.example.com", cachedGRPCRoute.Spec.Host)
-	assert.Equal(t, domain.RouteKindGRPC, cachedGRPCRoute.Metadata.Kind)
-
-	compositeCacheTest.updateRoutesCache(context.Background(), &RouteUpdate{
-		Type:        updateTypeDeleted,
-		RouteObject: grpcRoute,
-	})
-	routesRes = *compositeCacheTest.routesCache.routes[namespace]
-	assert.Equal(t, 1, len(routesRes))
+	assert.Len(t, routesRes, 1)
 	_, grpcStillPresent := routesRes[domain.RouteCacheKey(grpcRoute)]
 	_, httpStillPresent := routesRes[domain.RouteCacheKey(httpRoute)]
 	assert.False(t, grpcStillPresent)
 	assert.True(t, httpStillPresent)
+}
+
+func newRoutesCompositeCache(namespace string) *CompositeCache {
+	return &CompositeCache{
+		routesCache: &RoutesCache{
+			mutex: &sync.RWMutex{},
+			routes: map[string]*map[string]domain.Route{
+				namespace: {},
+			},
+		},
+	}
+}
+
+func TestInitRoutesMapInCache_HTTPRouteAndGRPCRouteSameName(t *testing.T) {
+	namespace := "cloud-core"
+	routeName := "cloud-administrator"
+	internalGateway, err := url.Parse("http://internal-gateway:8080")
+	assert.NoError(t, err)
+
+	mockExecutor := newMultiResponseHttpExecutor()
+	mockExecutor.addResponse(
+		"http://internal-gateway:8080/api/v2/paas-mediation/namespaces/"+namespace+"/routes",
+		[]domain.Route{},
+		200,
+	)
+	mockExecutor.addResponse(
+		"http://internal-gateway:8080/api/v2/paas-mediation/namespaces/"+namespace+"/gateway/httproutes",
+		[]gatewayv1.HTTPRoute{{
+			ObjectMeta: metav1.ObjectMeta{Name: routeName, Namespace: namespace},
+			Spec: gatewayv1.HTTPRouteSpec{
+				Hostnames: []gatewayv1.Hostname{"test-hhtproute.example.com"},
+				Rules: []gatewayv1.HTTPRouteRule{{
+					Matches:     []gatewayv1.HTTPRouteMatch{{Path: &gatewayv1.HTTPPathMatch{Value: strPtr("/")}}},
+					BackendRefs: []gatewayv1.HTTPBackendRef{{BackendRef: gatewayv1.BackendRef{BackendObjectReference: gatewayv1.BackendObjectReference{Name: "cloud-administrator-fe", Port: portPtr(8080)}}}},
+				}},
+			},
+		}},
+		200,
+	)
+	mockExecutor.addResponse(
+		"http://internal-gateway:8080/api/v2/paas-mediation/namespaces/"+namespace+"/gateway/grpcroutes",
+		[]gatewayv1.GRPCRoute{{
+			ObjectMeta: metav1.ObjectMeta{Name: routeName, Namespace: namespace},
+			Spec: gatewayv1.GRPCRouteSpec{
+				Hostnames: []gatewayv1.Hostname{"test-grpsroute.example.com"},
+				Rules: []gatewayv1.GRPCRouteRule{{
+					BackendRefs: []gatewayv1.GRPCBackendRef{{BackendRef: gatewayv1.BackendRef{BackendObjectReference: gatewayv1.BackendObjectReference{Name: "tenant-self-service-backend-v1", Port: portPtr(8080)}}}},
+				}},
+			},
+		}},
+		200,
+	)
+
+	paasClient := &PaasMediationClient{
+		httpExecutor:                   mockExecutor,
+		InternalGatewayAddress:         internalGateway,
+		enableGatewayApiRoutesWatching: true,
+		cache: &CompositeCache{
+			routesCache: &RoutesCache{
+				mutex:  &sync.RWMutex{},
+				routes: map[string]*map[string]domain.Route{},
+			},
+		},
+	}
+
+	paasClient.initRoutesMapInCache(context.Background(), namespace)
+
+	cachedRoutes := *paasClient.cache.routesCache.routes[namespace]
+	assert.Len(t, cachedRoutes, 2)
+	assert.Equal(t, "test-hhtproute.example.com", cachedRoutes["HTTPRoute/"+routeName].Spec.Host)
+	assert.Equal(t, "test-grpsroute.example.com", cachedRoutes["GRPCRoute/"+routeName].Spec.Host)
+}
+
+func TestGetRoutesWithoutCache_NormalizesOpenShiftRouteKind(t *testing.T) {
+	testData := prepareRoutesTestData()
+	mockExecutor := newMultiResponseHttpExecutor()
+	mockExecutor.addResponse(testData.regularRoutesUrl, testData.regularRoutes, 200)
+
+	paasClient := &PaasMediationClient{
+		httpExecutor:                   mockExecutor,
+		InternalGatewayAddress:         testData.internalGateway,
+		enableGatewayApiRoutesWatching: false,
+	}
+
+	routes, err := paasClient.getRoutesWithoutCache(context.Background(), testData.namespace)
+	assert.NoError(t, err)
+	assert.Len(t, routes, 1)
+	assert.Equal(t, domain.RouteKindOpenShift, routes[0].Metadata.Kind)
+	assert.Equal(t, domain.RouteCacheKey(routes[0]), "Route/regular-route")
 }
 
 func TestUpdateRoutesCacheByInitEventNewNamespace(t *testing.T) {

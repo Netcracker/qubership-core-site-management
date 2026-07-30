@@ -633,11 +633,8 @@ func (c *PaasMediationClient) initRoutesMapInCache(ctx context.Context, namespac
 		c.cache.routesCache.mutex.Lock()
 		defer c.cache.routesCache.mutex.Unlock()
 
-		initialNamespace := make(map[string]domain.Route)
-		c.cache.routesCache.routes[namespace] = &initialNamespace
-		for _, route := range routes {
-			(*c.cache.routesCache.routes[namespace])[domain.RouteCacheKey(route)] = route
-		}
+		indexedRoutes := domain.IndexRoutesByCacheKey(routes)
+		c.cache.routesCache.routes[namespace] = &indexedRoutes
 		logger.InfoC(ctx, "Return %d routes of namespace %s", len(routes), namespace)
 	} else {
 		logger.ErrorC(ctx, "Error occurred while getting routes from paas-mediation: %s", err.Error())
@@ -1064,17 +1061,13 @@ func (c *PaasMediationClient) initCompositeCache(ctx context.Context) {
 func (c *PaasMediationClient) initRoutesCache(ctx context.Context, ch chan *RoutesCache) {
 	newMutex := &sync.RWMutex{}
 	initialRoutes := make(map[string]*map[string]domain.Route)
-	initialNamespace := make(map[string]domain.Route)
-	initialRoutes[c.Namespace] = &initialNamespace
 	routes, err := c.getRoutesWithoutCache(ctx, c.Namespace)
 	if err != nil {
 		logger.ErrorC(ctx, "Failed to initialize cache of openshift routes: %s", err)
 		panic(err)
 	}
-	for i := range routes {
-		domain.NormalizeRouteKind(&routes[i])
-		(*initialRoutes[c.Namespace])[domain.RouteCacheKey(routes[i])] = routes[i]
-	}
+	indexedRoutes := domain.IndexRoutesByCacheKey(routes)
+	initialRoutes[c.Namespace] = &indexedRoutes
 
 	channel := make(chan []byte, 50)
 	c.createWebSocketClientsForRoutesInNamespace(ctx, c.Namespace, &channel)
