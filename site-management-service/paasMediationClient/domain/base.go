@@ -3,6 +3,7 @@ package domain
 import "fmt"
 
 type Metadata struct {
+	Kind        string            `json:"kind,omitempty"`
 	Name        string            `json:"name"`
 	Namespace   string            `json:"namespace"`
 	Annotations map[string]string `json:"annotations"`

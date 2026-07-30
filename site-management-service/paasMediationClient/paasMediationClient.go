@@ -191,7 +191,7 @@ func (cache *CompositeCache) updateRoutesCache(ctx context.Context, routeUpdateI
 			return
 		}
 
-		objectName := routeUpdate.RouteObject.Metadata.Name
+		objectName := domain.RouteCacheKey(routeUpdate.RouteObject)
 
 		if updateType == updateTypeCreated || updateType == updateTypeAdded || updateType == updateTypeModified {
 			logger.DebugC(ctx, "Type is %s, renew route %s with namespace %s in cache", updateType, objectName, objectNamespace)
@@ -419,13 +419,17 @@ func (c *PaasMediationClient) getRoutesWithoutCache(ctx context.Context, namespa
 
 		routeList = append(routeList, convertGRPCRoutes(grpcRouteList)...)
 	}
+	for i := range routeList {
+		domain.NormalizeRouteKind(&routeList[i])
+	}
 	logger.InfoC(ctx, "Get routes from namespace %s was completed successfully. Got %d routes", namespace, len(routeList))
 
 	return routeList, nil
 }
-func buildDomainRouteFromGateway(metaObj metav1.Object, host string, path string, backendName string, targetPort int32) domain.Route {
+func buildDomainRouteFromGateway(metaObj metav1.Object, kind string, host string, path string, backendName string, targetPort int32) domain.Route {
 	return domain.Route{
 		Metadata: domain.Metadata{
+			Kind:        kind,
 			Name:        metaObj.GetName(),
 			Namespace:   metaObj.GetNamespace(),
 			Annotations: metaObj.GetAnnotations(),
@@ -468,7 +472,7 @@ func convertHTTPRoutes(routes []gatewayv1.HTTPRoute) []domain.Route {
 							tp = 8080
 						}
 
-						result = append(result, buildDomainRouteFromGateway(r.GetObjectMeta(), string(host), path, string(backend.Name), tp))
+						result = append(result, buildDomainRouteFromGateway(r.GetObjectMeta(), domain.RouteKindHTTP, string(host), path, string(backend.Name), tp))
 					}
 				}
 			}
@@ -494,7 +498,7 @@ func convertGRPCRoutes(routes []gatewayv1.GRPCRoute) []domain.Route {
 					if backend.Port != nil {
 						tp = int32(*backend.Port)
 					}
-					result = append(result, buildDomainRouteFromGateway(r.GetObjectMeta(), string(host), "/", string(backend.Name), tp))
+					result = append(result, buildDomainRouteFromGateway(r.GetObjectMeta(), domain.RouteKindGRPC, string(host), "/", string(backend.Name), tp))
 				}
 			}
 		}
@@ -632,7 +636,7 @@ func (c *PaasMediationClient) initRoutesMapInCache(ctx context.Context, namespac
 		initialNamespace := make(map[string]domain.Route)
 		c.cache.routesCache.routes[namespace] = &initialNamespace
 		for _, route := range routes {
-			(*c.cache.routesCache.routes[namespace])[route.Metadata.Name] = route
+			(*c.cache.routesCache.routes[namespace])[domain.RouteCacheKey(route)] = route
 		}
 		logger.InfoC(ctx, "Return %d routes of namespace %s", len(routes), namespace)
 	} else {
@@ -1067,8 +1071,9 @@ func (c *PaasMediationClient) initRoutesCache(ctx context.Context, ch chan *Rout
 		logger.ErrorC(ctx, "Failed to initialize cache of openshift routes: %s", err)
 		panic(err)
 	}
-	for _, route := range routes {
-		(*initialRoutes[c.Namespace])[route.Metadata.Name] = route
+	for i := range routes {
+		domain.NormalizeRouteKind(&routes[i])
+		(*initialRoutes[c.Namespace])[domain.RouteCacheKey(routes[i])] = routes[i]
 	}
 
 	channel := make(chan []byte, 50)

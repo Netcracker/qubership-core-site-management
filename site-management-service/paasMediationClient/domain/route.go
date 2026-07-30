@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+const (
+	RouteKindOpenShift = "Route"
+	RouteKindHTTP      = "HTTPRoute"
+	RouteKindGRPC      = "GRPCRoute"
+)
+
 type Route struct {
 	Metadata Metadata  `json:"metadata"`
 	Spec     RouteSpec `json:"spec"`
@@ -24,6 +30,26 @@ type Target struct {
 
 type RoutePort struct {
 	TargetPort int32 `json:"targetPort"`
+}
+
+func routeKindOrDefault(kind string) string {
+	if kind == "" {
+		return RouteKindOpenShift
+	}
+	return kind
+}
+
+// RouteCacheKey returns a unique cache key for a route within a namespace.
+// HTTPRoute and GRPCRoute may share the same metadata.name in Kubernetes.
+func RouteCacheKey(route Route) string {
+	return routeKindOrDefault(route.Metadata.Kind) + "/" + route.Metadata.Name
+}
+
+// NormalizeRouteKind assigns the default OpenShift route kind when kind is absent.
+func NormalizeRouteKind(route *Route) {
+	if route.Metadata.Kind == "" {
+		route.Metadata.Kind = RouteKindOpenShift
+	}
 }
 
 func (r Route) GetPriority() int {
