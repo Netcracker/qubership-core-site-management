@@ -98,8 +98,8 @@ func TestUpdateRoutesCacheByDeleteEvent(t *testing.T) {
 			mutex: &sync.RWMutex{},
 			routes: map[string]*map[string]domain.Route{
 				"test-namespace": {
-					domain.RouteCacheKey(domain.Route{Metadata: domain.Metadata{Name: "route-one"}}):   {},
-					domain.RouteCacheKey(domain.Route{Metadata: domain.Metadata{Name: "route-two"}}):   {},
+					domain.RouteCacheKey(domain.Route{Metadata: domain.Metadata{Name: "route-one"}}): {},
+					domain.RouteCacheKey(domain.Route{Metadata: domain.Metadata{Name: "route-two"}}): {},
 				},
 			},
 		}}
@@ -175,7 +175,7 @@ func TestUpdateRoutesCache_HTTPRouteAndGRPCRouteSameName(t *testing.T) {
 			Namespace: namespace,
 		},
 		Spec: domain.RouteSpec{
-			Host:    "test-grpsroute.example.com",
+			Host:    "test-grpcroute.example.com",
 			Service: domain.Target{Name: "tenant-self-service-backend-v1"},
 		},
 	}
@@ -191,7 +191,7 @@ func TestUpdateRoutesCache_HTTPRouteAndGRPCRouteSameName(t *testing.T) {
 			routesRes := *cache.routesCache.routes[namespace]
 			assert.Len(t, routesRes, 2)
 			assert.Equal(t, "test-hhtproute.example.com", routesRes[domain.RouteCacheKey(httpRoute)].Spec.Host)
-			assert.Equal(t, "test-grpsroute.example.com", routesRes[domain.RouteCacheKey(grpcRoute)].Spec.Host)
+			assert.Equal(t, "test-grpcroute.example.com", routesRes[domain.RouteCacheKey(grpcRoute)].Spec.Host)
 		})
 	}
 
@@ -249,7 +249,7 @@ func TestInitRoutesMapInCache_HTTPRouteAndGRPCRouteSameName(t *testing.T) {
 		[]gatewayv1.GRPCRoute{{
 			ObjectMeta: metav1.ObjectMeta{Name: routeName, Namespace: namespace},
 			Spec: gatewayv1.GRPCRouteSpec{
-				Hostnames: []gatewayv1.Hostname{"test-grpsroute.example.com"},
+				Hostnames: []gatewayv1.Hostname{"test-grpcroute.example.com"},
 				Rules: []gatewayv1.GRPCRouteRule{{
 					BackendRefs: []gatewayv1.GRPCBackendRef{{BackendRef: gatewayv1.BackendRef{BackendObjectReference: gatewayv1.BackendObjectReference{Name: "tenant-self-service-backend-v1", Port: portPtr(8080)}}}},
 				}},
@@ -275,7 +275,7 @@ func TestInitRoutesMapInCache_HTTPRouteAndGRPCRouteSameName(t *testing.T) {
 	cachedRoutes := *paasClient.cache.routesCache.routes[namespace]
 	assert.Len(t, cachedRoutes, 2)
 	assert.Equal(t, "test-hhtproute.example.com", cachedRoutes["HTTPRoute/"+routeName].Spec.Host)
-	assert.Equal(t, "test-grpsroute.example.com", cachedRoutes["GRPCRoute/"+routeName].Spec.Host)
+	assert.Equal(t, "test-grpcroute.example.com", cachedRoutes["GRPCRoute/"+routeName].Spec.Host)
 }
 
 func TestGetRoutesWithoutCache_NormalizesOpenShiftRouteKind(t *testing.T) {

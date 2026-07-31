@@ -47,9 +47,7 @@ func RouteCacheKey(route Route) string {
 
 // NormalizeRouteKind assigns the default OpenShift route kind when kind is absent.
 func NormalizeRouteKind(route *Route) {
-	if route.Metadata.Kind == "" {
-		route.Metadata.Kind = RouteKindOpenShift
-	}
+	route.Metadata.Kind = routeKindOrDefault(route.Metadata.Kind)
 }
 
 // IndexRoutesByCacheKey indexes routes by kind/name cache key.
