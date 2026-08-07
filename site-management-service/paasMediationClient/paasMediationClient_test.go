@@ -98,8 +98,8 @@ func TestUpdateRoutesCacheByDeleteEvent(t *testing.T) {
 			mutex: &sync.RWMutex{},
 			routes: map[string]*map[string]domain.Route{
 				"test-namespace": {
-					domain.RouteCacheKey(domain.Route{Metadata: domain.Metadata{Name: "route-one"}}): {},
-					domain.RouteCacheKey(domain.Route{Metadata: domain.Metadata{Name: "route-two"}}): {},
+					domain.Route{Metadata: domain.Metadata{Name: "route-one"}}.CacheKey(): {},
+					domain.Route{Metadata: domain.Metadata{Name: "route-two"}}.CacheKey(): {},
 				},
 			},
 		}}
@@ -115,8 +115,6 @@ func TestUpdateRoutesCacheByInitEvent(t *testing.T) {
 
 	oneRoute := domain.Route{Metadata: domain.Metadata{Name: "route-one"}}
 	twoRoute := domain.Route{Metadata: domain.Metadata{Name: "route-two"}}
-	domain.NormalizeRouteKind(&oneRoute)
-	domain.NormalizeRouteKind(&twoRoute)
 	routes := []domain.Route{
 		oneRoute,
 		twoRoute,
@@ -148,7 +146,7 @@ func TestUpdateRoutesCacheByInitEvent(t *testing.T) {
 	assertResult(So(fakeExec.isCreateSecureRequestMethodCalled, ShouldBeTrue))
 	assertResult(So(routesRes, ShouldHaveLength, 2))
 	for _, route := range []domain.Route{oneRoute, twoRoute} {
-		_, ok := routesRes[domain.RouteCacheKey(route)]
+		_, ok := routesRes[route.CacheKey()]
 		assert.True(t, ok)
 	}
 }
@@ -190,8 +188,8 @@ func TestUpdateRoutesCache_HTTPRouteAndGRPCRouteSameName(t *testing.T) {
 
 			routesRes := *cache.routesCache.routes[namespace]
 			assert.Len(t, routesRes, 2)
-			assert.Equal(t, "test-hhtproute.example.com", routesRes[domain.RouteCacheKey(httpRoute)].Spec.Host)
-			assert.Equal(t, "test-grpcroute.example.com", routesRes[domain.RouteCacheKey(grpcRoute)].Spec.Host)
+			assert.Equal(t, "test-hhtproute.example.com", routesRes[httpRoute.CacheKey()].Spec.Host)
+			assert.Equal(t, "test-grpcroute.example.com", routesRes[grpcRoute.CacheKey()].Spec.Host)
 		})
 	}
 
@@ -201,8 +199,8 @@ func TestUpdateRoutesCache_HTTPRouteAndGRPCRouteSameName(t *testing.T) {
 
 	routesRes := *compositeCacheTest.routesCache.routes[namespace]
 	assert.Len(t, routesRes, 1)
-	_, grpcStillPresent := routesRes[domain.RouteCacheKey(grpcRoute)]
-	_, httpStillPresent := routesRes[domain.RouteCacheKey(httpRoute)]
+	_, grpcStillPresent := routesRes[grpcRoute.CacheKey()]
+	_, httpStillPresent := routesRes[httpRoute.CacheKey()]
 	assert.False(t, grpcStillPresent)
 	assert.True(t, httpStillPresent)
 }
@@ -278,7 +276,7 @@ func TestInitRoutesMapInCache_HTTPRouteAndGRPCRouteSameName(t *testing.T) {
 	assert.Equal(t, "test-grpcroute.example.com", cachedRoutes["GRPCRoute/"+routeName].Spec.Host)
 }
 
-func TestGetRoutesWithoutCache_NormalizesOpenShiftRouteKind(t *testing.T) {
+func TestGetRoutesWithoutCache_CacheKey(t *testing.T) {
 	testData := prepareRoutesTestData()
 	mockExecutor := newMultiResponseHttpExecutor()
 	mockExecutor.addResponse(testData.regularRoutesUrl, testData.regularRoutes, 200)
@@ -292,16 +290,13 @@ func TestGetRoutesWithoutCache_NormalizesOpenShiftRouteKind(t *testing.T) {
 	routes, err := paasClient.getRoutesWithoutCache(context.Background(), testData.namespace)
 	assert.NoError(t, err)
 	assert.Len(t, routes, 1)
-	assert.Equal(t, domain.RouteKindOpenShift, routes[0].Metadata.Kind)
-	assert.Equal(t, domain.RouteCacheKey(routes[0]), "Route/regular-route")
+	assert.Equal(t, "Route/regular-route", routes[0].CacheKey())
 }
 
 func TestUpdateRoutesCacheByInitEventNewNamespace(t *testing.T) {
 
 	oneRoute := domain.Route{Metadata: domain.Metadata{Name: "route-three"}}
 	twoRoute := domain.Route{Metadata: domain.Metadata{Name: "route-four"}}
-	domain.NormalizeRouteKind(&oneRoute)
-	domain.NormalizeRouteKind(&twoRoute)
 	routes := []domain.Route{
 		oneRoute,
 		twoRoute,
@@ -333,7 +328,7 @@ func TestUpdateRoutesCacheByInitEventNewNamespace(t *testing.T) {
 	assertResult(So(fakeExec.isCreateSecureRequestMethodCalled, ShouldBeTrue))
 	assertResult(So(routesRes, ShouldHaveLength, 2))
 	for _, route := range []domain.Route{oneRoute, twoRoute} {
-		_, ok := routesRes[domain.RouteCacheKey(route)]
+		_, ok := routesRes[route.CacheKey()]
 		assert.True(t, ok)
 	}
 }
@@ -452,7 +447,7 @@ func TestSyncingCache(t *testing.T) {
 	configMapsChannel <- []byte("{\"type\":\"ADDED\",\"object\":{\"metadata\":{\"kind\":\"ConfigMap\",\"name\":\"junk-config-map\",\"namespace\":\"test-namespace\",\"annotations\":{\"kubectl.kubernetes.io/last-applied-configuration\":\"{\\\"apiVersion\\\":\\\"v1\\\",\\\"data\\\":{\\\"common-external-routes.json\\\":\\\"[\\\"localhost:4200\\\"]},\\\"kind\\\":\\\"ConfigMap\\\",\\\"metadata\\\":{\\\"annotations\\\":{},\\\"name\\\":\\\"junk-config-map\\\",\\\"namespace\\\":\\\"test-namespace\\\"}}\\n\"}},\"data\":{\"common-external-routes.json\":\"[\\\"localhost:4200\\\"]\"}}}")
 	time.Sleep(5 * time.Second)
 
-	assert.Equal(t, "domain-resolver-frontend", (*paasClient.cache.routesCache.routes["test-namespace"])[domain.RouteCacheKey(domain.Route{Metadata: domain.Metadata{Kind: domain.RouteKindOpenShift, Name: "domain-resolver-frontend"}})].Metadata.Name)
+	assert.Equal(t, "domain-resolver-frontend", (*paasClient.cache.routesCache.routes["test-namespace"])[domain.Route{Metadata: domain.Metadata{Kind: domain.RouteKindNative, Name: "domain-resolver-frontend"}}.CacheKey()].Metadata.Name)
 	assert.Equal(t, "public-gateway-service", (*paasClient.cache.servicesCache.services["test-namespace"])["public-gateway-service"].Metadata.Name)
 	assert.Equal(t, "tenant-manager-configs", (*paasClient.cache.configMapsCache.configMaps["test-namespace"])["tenant-manager-configs"].Metadata.Name)
 	assert.Equal(t, "baseline-version", (*paasClient.cache.configMapsCache.configMaps["test-namespace"])["baseline-version"].Metadata.Name)

@@ -191,14 +191,14 @@ func (cache *CompositeCache) updateRoutesCache(ctx context.Context, routeUpdateI
 			return
 		}
 
-		objectName := domain.RouteCacheKey(routeUpdate.RouteObject)
+		cacheKey := routeUpdate.RouteObject.CacheKey()
 
 		if updateType == updateTypeCreated || updateType == updateTypeAdded || updateType == updateTypeModified {
-			logger.DebugC(ctx, "Type is %s, renew route %s with namespace %s in cache", updateType, objectName, objectNamespace)
-			namespacedRoutes[objectName] = routeUpdate.RouteObject
+			logger.DebugC(ctx, "Type is %s, renew route %s with namespace %s in cache", updateType, cacheKey, objectNamespace)
+			namespacedRoutes[cacheKey] = routeUpdate.RouteObject
 		} else if updateType == updateTypeDeleted {
-			logger.DebugC(ctx, "Type is DELETED, remove route %s from cache from namespace %s", objectName, objectNamespace)
-			delete(namespacedRoutes, objectName)
+			logger.DebugC(ctx, "Type is DELETED, remove route %s from cache from namespace %s", cacheKey, objectNamespace)
+			delete(namespacedRoutes, cacheKey)
 		}
 	}
 }
@@ -419,9 +419,6 @@ func (c *PaasMediationClient) getRoutesWithoutCache(ctx context.Context, namespa
 
 		routeList = append(routeList, convertGRPCRoutes(grpcRouteList)...)
 	}
-	for i := range routeList {
-		domain.NormalizeRouteKind(&routeList[i])
-	}
 	logger.InfoC(ctx, "Get routes from namespace %s was completed successfully. Got %d routes", namespace, len(routeList))
 
 	return routeList, nil
@@ -633,8 +630,11 @@ func (c *PaasMediationClient) initRoutesMapInCache(ctx context.Context, namespac
 		c.cache.routesCache.mutex.Lock()
 		defer c.cache.routesCache.mutex.Unlock()
 
-		indexedRoutes := domain.IndexRoutesByCacheKey(routes)
-		c.cache.routesCache.routes[namespace] = &indexedRoutes
+		routesMap := make(map[string]domain.Route, len(routes))
+		for _, route := range routes {
+			routesMap[route.CacheKey()] = route
+		}
+		c.cache.routesCache.routes[namespace] = &routesMap
 		logger.InfoC(ctx, "Return %d routes of namespace %s", len(routes), namespace)
 	} else {
 		logger.ErrorC(ctx, "Error occurred while getting routes from paas-mediation: %s", err.Error())
@@ -1066,8 +1066,11 @@ func (c *PaasMediationClient) initRoutesCache(ctx context.Context, ch chan *Rout
 		logger.ErrorC(ctx, "Failed to initialize cache of openshift routes: %s", err)
 		panic(err)
 	}
-	indexedRoutes := domain.IndexRoutesByCacheKey(routes)
-	initialRoutes[c.Namespace] = &indexedRoutes
+	routesMap := make(map[string]domain.Route, len(routes))
+	for _, route := range routes {
+		routesMap[route.CacheKey()] = route
+	}
+	initialRoutes[c.Namespace] = &routesMap
 
 	channel := make(chan []byte, 50)
 	c.createWebSocketClientsForRoutesInNamespace(ctx, c.Namespace, &channel)
