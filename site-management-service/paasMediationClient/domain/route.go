@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+const (
+	RouteKindNative = "Route"
+	RouteKindHTTP   = "HTTPRoute"
+	RouteKindGRPC   = "GRPCRoute"
+)
+
 type Route struct {
 	Metadata Metadata  `json:"metadata"`
 	Spec     RouteSpec `json:"spec"`
@@ -24,6 +30,14 @@ type Target struct {
 
 type RoutePort struct {
 	TargetPort int32 `json:"targetPort"`
+}
+
+func (r Route) CacheKey() string {
+	kind := r.Metadata.Kind
+	if kind == "" {
+		kind = RouteKindNative
+	}
+	return kind + "/" + r.Metadata.Name
 }
 
 func (r Route) GetPriority() int {

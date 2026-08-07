@@ -191,14 +191,14 @@ func (cache *CompositeCache) updateRoutesCache(ctx context.Context, routeUpdateI
 			return
 		}
 
-		objectName := routeUpdate.RouteObject.Metadata.Name
+		cacheKey := routeUpdate.RouteObject.CacheKey()
 
 		if updateType == updateTypeCreated || updateType == updateTypeAdded || updateType == updateTypeModified {
-			logger.DebugC(ctx, "Type is %s, renew route %s with namespace %s in cache", updateType, objectName, objectNamespace)
-			namespacedRoutes[objectName] = routeUpdate.RouteObject
+			logger.DebugC(ctx, "Type is %s, renew route %s with namespace %s in cache", updateType, cacheKey, objectNamespace)
+			namespacedRoutes[cacheKey] = routeUpdate.RouteObject
 		} else if updateType == updateTypeDeleted {
-			logger.DebugC(ctx, "Type is DELETED, remove route %s from cache from namespace %s", objectName, objectNamespace)
-			delete(namespacedRoutes, objectName)
+			logger.DebugC(ctx, "Type is DELETED, remove route %s from cache from namespace %s", cacheKey, objectNamespace)
+			delete(namespacedRoutes, cacheKey)
 		}
 	}
 }
@@ -423,9 +423,10 @@ func (c *PaasMediationClient) getRoutesWithoutCache(ctx context.Context, namespa
 
 	return routeList, nil
 }
-func buildDomainRouteFromGateway(metaObj metav1.Object, host string, path string, backendName string, targetPort int32) domain.Route {
+func buildDomainRouteFromGateway(metaObj metav1.Object, kind string, host string, path string, backendName string, targetPort int32) domain.Route {
 	return domain.Route{
 		Metadata: domain.Metadata{
+			Kind:        kind,
 			Name:        metaObj.GetName(),
 			Namespace:   metaObj.GetNamespace(),
 			Annotations: metaObj.GetAnnotations(),
@@ -468,7 +469,7 @@ func convertHTTPRoutes(routes []gatewayv1.HTTPRoute) []domain.Route {
 							tp = 8080
 						}
 
-						result = append(result, buildDomainRouteFromGateway(r.GetObjectMeta(), string(host), path, string(backend.Name), tp))
+						result = append(result, buildDomainRouteFromGateway(r.GetObjectMeta(), domain.RouteKindHTTP, string(host), path, string(backend.Name), tp))
 					}
 				}
 			}
@@ -494,7 +495,7 @@ func convertGRPCRoutes(routes []gatewayv1.GRPCRoute) []domain.Route {
 					if backend.Port != nil {
 						tp = int32(*backend.Port)
 					}
-					result = append(result, buildDomainRouteFromGateway(r.GetObjectMeta(), string(host), "/", string(backend.Name), tp))
+					result = append(result, buildDomainRouteFromGateway(r.GetObjectMeta(), domain.RouteKindGRPC, string(host), "/", string(backend.Name), tp))
 				}
 			}
 		}
@@ -629,11 +630,11 @@ func (c *PaasMediationClient) initRoutesMapInCache(ctx context.Context, namespac
 		c.cache.routesCache.mutex.Lock()
 		defer c.cache.routesCache.mutex.Unlock()
 
-		initialNamespace := make(map[string]domain.Route)
-		c.cache.routesCache.routes[namespace] = &initialNamespace
+		routesMap := make(map[string]domain.Route, len(routes))
 		for _, route := range routes {
-			(*c.cache.routesCache.routes[namespace])[route.Metadata.Name] = route
+			routesMap[route.CacheKey()] = route
 		}
+		c.cache.routesCache.routes[namespace] = &routesMap
 		logger.InfoC(ctx, "Return %d routes of namespace %s", len(routes), namespace)
 	} else {
 		logger.ErrorC(ctx, "Error occurred while getting routes from paas-mediation: %s", err.Error())
@@ -847,7 +848,9 @@ func (c *PaasMediationClient) GetServicesForNamespaces2(ctx context.Context, nam
 	}
 }
 
-func (c *PaasMediationClient) DeleteRoute(ctx context.Context, namespace, name string) error {
+func (c *PaasMediationClient) DeleteRoute(ctx context.Context, route *domain.Route) error {
+	namespace := route.Metadata.Namespace
+	name := route.Metadata.Name
 	logger.InfoC(ctx, "Delete route %s from namespace %s", name, namespace)
 
 	buildUrl, err := c.buildUrl(ctx, namespace, routesString, name)
@@ -861,16 +864,10 @@ func (c *PaasMediationClient) DeleteRoute(ctx context.Context, namespace, name s
 		return err
 	}
 	logger.InfoC(ctx, "Route %s was successfully removed from namespace %s, result %+v", name, namespace, result)
-	routeToDelete := RouteUpdate{
-		Type: updateTypeDeleted,
-		RouteObject: domain.Route{
-			Metadata: domain.Metadata{
-				Namespace: namespace,
-				Name:      name,
-			},
-		},
-	}
-	c.cache.updateRoutesCache(ctx, &routeToDelete)
+	c.cache.updateRoutesCache(ctx, &RouteUpdate{
+		Type:        updateTypeDeleted,
+		RouteObject: *route,
+	})
 	return nil
 }
 
@@ -1060,16 +1057,16 @@ func (c *PaasMediationClient) initCompositeCache(ctx context.Context) {
 func (c *PaasMediationClient) initRoutesCache(ctx context.Context, ch chan *RoutesCache) {
 	newMutex := &sync.RWMutex{}
 	initialRoutes := make(map[string]*map[string]domain.Route)
-	initialNamespace := make(map[string]domain.Route)
-	initialRoutes[c.Namespace] = &initialNamespace
 	routes, err := c.getRoutesWithoutCache(ctx, c.Namespace)
 	if err != nil {
 		logger.ErrorC(ctx, "Failed to initialize cache of openshift routes: %s", err)
 		panic(err)
 	}
+	routesMap := make(map[string]domain.Route, len(routes))
 	for _, route := range routes {
-		(*initialRoutes[c.Namespace])[route.Metadata.Name] = route
+		routesMap[route.CacheKey()] = route
 	}
+	initialRoutes[c.Namespace] = &routesMap
 
 	channel := make(chan []byte, 50)
 	c.createWebSocketClientsForRoutesInNamespace(ctx, c.Namespace, &channel)
