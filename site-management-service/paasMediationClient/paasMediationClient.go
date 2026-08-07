@@ -848,7 +848,9 @@ func (c *PaasMediationClient) GetServicesForNamespaces2(ctx context.Context, nam
 	}
 }
 
-func (c *PaasMediationClient) DeleteRoute(ctx context.Context, namespace, name string) error {
+func (c *PaasMediationClient) DeleteRoute(ctx context.Context, route *domain.Route) error {
+	namespace := route.Metadata.Namespace
+	name := route.Metadata.Name
 	logger.InfoC(ctx, "Delete route %s from namespace %s", name, namespace)
 
 	buildUrl, err := c.buildUrl(ctx, namespace, routesString, name)
@@ -862,16 +864,10 @@ func (c *PaasMediationClient) DeleteRoute(ctx context.Context, namespace, name s
 		return err
 	}
 	logger.InfoC(ctx, "Route %s was successfully removed from namespace %s, result %+v", name, namespace, result)
-	routeToDelete := RouteUpdate{
-		Type: updateTypeDeleted,
-		RouteObject: domain.Route{
-			Metadata: domain.Metadata{
-				Namespace: namespace,
-				Name:      name,
-			},
-		},
-	}
-	c.cache.updateRoutesCache(ctx, &routeToDelete)
+	c.cache.updateRoutesCache(ctx, &RouteUpdate{
+		Type:        updateTypeDeleted,
+		RouteObject: *route,
+	})
 	return nil
 }
 

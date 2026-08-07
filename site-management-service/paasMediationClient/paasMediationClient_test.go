@@ -351,20 +351,51 @@ func TestCreateRoute(t *testing.T) {
 }
 
 func TestDeleteRoute(t *testing.T) {
-	routeName := "route-one"
+	route := domain.Route{Metadata: domain.Metadata{Namespace: "test-namespace", Name: "route-one"}}
 	httpExecutor := newFakeHttpExecutor(nil, 200)
 	internalGateway, e := url.Parse("http://internal-gateway:8080")
 	if e != nil {
 		panic(e)
 	}
 	paasClient := createPaasClientWithRouteCache(httpExecutor, internalGateway)
-	err := paasClient.DeleteRoute(context.Background(), "test-namespace", routeName)
+	(*paasClient.cache.routesCache.routes["test-namespace"])[route.CacheKey()] = route
+
+	err := paasClient.DeleteRoute(context.Background(), &route)
 	if err != nil {
 		panic(err)
 	}
 	assertResult(So(httpExecutor.isCreateSecureRequestMethodCalled, ShouldBeTrue))
-	assertResult(So(httpExecutor.requestUrl, ShouldEqual, "http://internal-gateway:8080/api/v2/paas-mediation/namespaces/test-namespace/routes/"+routeName))
+	assertResult(So(httpExecutor.requestUrl, ShouldEqual, "http://internal-gateway:8080/api/v2/paas-mediation/namespaces/test-namespace/routes/route-one"))
 	assert.Equal(t, 0, len(*paasClient.cache.routesCache.routes["test-namespace"]))
+}
+
+func TestDeleteRoute_RemovesRouteByKindCacheKey(t *testing.T) {
+	namespace := "test-namespace"
+	routeName := "cloud-administrator"
+	httpRoute := domain.Route{
+		Metadata: domain.Metadata{Kind: domain.RouteKindHTTP, Name: routeName, Namespace: namespace},
+	}
+	grpcRoute := domain.Route{
+		Metadata: domain.Metadata{Kind: domain.RouteKindGRPC, Name: routeName, Namespace: namespace},
+	}
+
+	httpExecutor := newFakeHttpExecutor(nil, 200)
+	internalGateway, e := url.Parse("http://internal-gateway:8080")
+	if e != nil {
+		panic(e)
+	}
+	paasClient := createPaasClientWithRouteCache(httpExecutor, internalGateway)
+	routesMap := *paasClient.cache.routesCache.routes[namespace]
+	routesMap[httpRoute.CacheKey()] = httpRoute
+	routesMap[grpcRoute.CacheKey()] = grpcRoute
+
+	err := paasClient.DeleteRoute(context.Background(), &httpRoute)
+	assert.NoError(t, err)
+	assert.Len(t, routesMap, 1)
+	_, httpStillPresent := routesMap[httpRoute.CacheKey()]
+	_, grpcStillPresent := routesMap[grpcRoute.CacheKey()]
+	assert.False(t, httpStillPresent)
+	assert.True(t, grpcStillPresent)
 }
 
 func createPaasClientWithRouteCache(httpExecutor *fakeHttpExecutor, gateway *url.URL) *PaasMediationClient {

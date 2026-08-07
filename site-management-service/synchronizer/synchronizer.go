@@ -1400,7 +1400,8 @@ func (s *Synchronizer) processSynchronization(ctx context.Context) error {
 	for _, route := range *manageableRoutes {
 		if !RouteIsGeneral(&route) && !hostBelongsToActiveTenant(ctx, route.Spec.Host, allSettings) {
 			logger.DebugC(ctx, "Host %s is not present in database or belongs to non-active tenant and will be deleted", route.Spec.Host)
-			err = s.pmClient.DeleteRoute(ctx, route.Metadata.Namespace, route.Metadata.Name)
+			r := route
+			err = s.pmClient.DeleteRoute(ctx, &r)
 			if err != nil {
 				logger.ErrorC(ctx, "Error occurred while deleting route with name %s and host %s", route.Metadata.Name, route.Spec.Host)
 			}
@@ -1856,7 +1857,8 @@ func (s *Synchronizer) DeleteVirtualService(ctx context.Context, serviceName str
 	}
 	for _, routeToDelete := range *routesToDelete {
 		logger.DebugC(ctx, "Try to delete route %+v", routeToDelete)
-		err = s.pmClient.DeleteRoute(ctx, namespace, routeToDelete.Metadata.Name)
+		r := routeToDelete
+		err = s.pmClient.DeleteRoute(ctx, &r)
 		if err != nil {
 			logger.ErrorC(ctx, "Error while deleting route %v", err)
 			return err
