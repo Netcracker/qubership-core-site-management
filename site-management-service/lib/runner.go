@@ -12,14 +12,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/netcracker/qubership-core-lib-go-actuator-common/v2/health"
 	"github.com/netcracker/qubership-core-lib-go-actuator-common/v2/tracing"
 	dbaasbase "github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3"
 	pgdbaas "github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4"
 	"github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4/model"
-	fiberserver "github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2"
-	"github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2/server"
+	fiberserver "github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v3"
+	"github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v3/server"
 	"github.com/netcracker/qubership-core-lib-go-rest-utils/v2/consul-propertysource"
 	routeregistration "github.com/netcracker/qubership-core-lib-go-rest-utils/v2/route-registration"
 	"github.com/netcracker/qubership-core-lib-go/v3/configloader"
@@ -125,7 +125,7 @@ func RunService() {
 		logger.Error("Couldn't create healthService")
 	}
 
-	app, err := fiberserver.New(fiber.Config{Network: fiber.NetworkTCP, IdleTimeout: 30 * time.Second}).
+	app, err := fiberserver.New(fiber.Config{IdleTimeout: 30 * time.Second}).
 		WithPprof("6060").
 		WithPrometheus("/prometheus").
 		WithHealth("/health", healthService).
@@ -178,7 +178,7 @@ func RunService() {
 	).Register()
 
 	// swagger
-	app.Get("/swagger-ui/swagger.json", func(ctx *fiber.Ctx) error {
+	app.Get("/swagger-ui/swagger.json", func(ctx fiber.Ctx) error {
 		ctx.Set("Content-Type", "application/json")
 		return ctx.Status(http.StatusOK).SendString(docs.SwaggerInfo.ReadDoc()) // run `go generate` for local work
 	})
@@ -194,7 +194,7 @@ func RunService() {
 		globalCancel()
 	})
 
-	server.StartServer(app, "http.server.bind")
+	server.StartServer(app, "http.server.bind", fiber.ListenConfig{ListenerNetwork: fiber.NetworkTCP})
 
 	os.Exit(int(exitCode.Load()))
 }
