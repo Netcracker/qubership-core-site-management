@@ -1,6 +1,6 @@
 module github.com/netcracker/qubership-core-site-management/site-management-service/v2
 
-go 1.27.0
+go 1.27.1
 
 require (
 	github.com/ghodss/yaml v1.0.0
@@ -25,7 +25,7 @@ require (
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/valyala/fasthttp v1.73.0
 	k8s.io/apimachinery v0.37.0
-	sigs.k8s.io/gateway-api v1.6.1
+	sigs.k8s.io/gateway-api v1.6.2
 	sigs.k8s.io/yaml v1.6.0
 )
 
