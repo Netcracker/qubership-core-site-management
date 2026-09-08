@@ -1,14 +1,11 @@
-apiVersion: core.netcracker.com/v1
-kind: DBaaS
-subKind: DbPolicy
+apiVersion: dbaas.netcracker.com/v1
+kind: DatabaseAccessPolicy
 metadata:
-  name: {{ .Values.SERVICE_NAME }}
+  name: {{ .Values.SERVICE_NAME }}-databaseaccesspolicy
   namespace: {{ .Values.NAMESPACE }}
   labels:
-    app.kubernetes.io/name: "{{ .Values.SERVICE_NAME }}"
-    app.kubernetes.io/part-of: "{{ .Values.APPLICATION_NAME }}"
-    app.kubernetes.io/processed-by-operator: core-operator
-    deployer.cleanup/allow: "true"
-    deployment.netcracker.com/sessionId: "{{ .Values.DEPLOYMENT_SESSION_ID }}"
+    app.kubernetes.io/name: {{ .Values.SERVICE_NAME }}
 spec:
+  operatorNamespace: "{{ .Values.DBAAS_OPERATOR_NAMESPACE }}"
+  microserviceName: {{ .Values.SERVICE_NAME }}
   disableGlobalPermissions: true
