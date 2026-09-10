@@ -23,7 +23,7 @@ require (
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.44.0
 	github.com/uptrace/bun v1.2.18
 	github.com/urfave/cli/v2 v2.27.7
-	github.com/valyala/fasthttp v1.73.0
+	github.com/valyala/fasthttp v1.74.0
 	k8s.io/apimachinery v0.37.0
 	sigs.k8s.io/gateway-api v1.6.1
 	sigs.k8s.io/yaml v1.6.0
@@ -35,7 +35,6 @@ require (
 	github.com/KimMachineGun/automemlimit v0.7.5 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/avast/retry-go/v4 v4.7.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -94,7 +93,7 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.19.1 // indirect
+	github.com/klauspost/compress v1.20.0 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/parsers/yaml v1.1.1 // indirect
 	github.com/knadh/koanf/providers/env/v2 v2.0.1 // indirect
@@ -119,6 +118,7 @@ require (
 	github.com/moby/term v0.5.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
+	github.com/molecule-man/go-brrr v1.0.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/netcracker/qubership-core-lib-go-error-handling/v3 v3.7.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
