@@ -75,6 +75,11 @@ spec:
               - name: topology
                 configMap:
                   name: topology
+{{- if .Capabilities.APIVersions.Has "dbaas.netcracker.com/v1" }}
+              - name: dbaas-db-admin-secret
+                secret:
+                  secretName: '{{ .Values.SERVICE_NAME }}-db-admin-secret'
+{{- end }}
 {{- if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
               - name: sslcerts
                 emptyDir: {}
@@ -175,6 +180,11 @@ spec:
                   - name: topology
                     mountPath: /etc/topology
                     readOnly: true
+{{- if .Capabilities.APIVersions.Has "dbaas.netcracker.com/v1" }}
+                  - name: dbaas-db-admin-secret
+                    mountPath: /etc/secrets/dbaas-secrets/{{ .Values.SERVICE_NAME }}-db-admin-secret
+                    readOnly: true
+{{- end }}
 {{- if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
                   - name: sslcerts
                     mountPath: /etc/ssl/certs
