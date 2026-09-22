@@ -9,13 +9,13 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/mitchellh/hashstructure/v2 v2.0.2
-	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.11.0
+	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.12.0
 	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.7.1
 	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.5.1
-	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.10.0
-	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.8.1-0.20260916135923-51b88a0872b6
+	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.11.0
+	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.9.0
 	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.6.0
-	github.com/netcracker/qubership-core-lib-go/v3 v3.14.0
+	github.com/netcracker/qubership-core-lib-go/v3 v3.14.1
 	github.com/smarty/assertions v1.16.0
 	github.com/stretchr/testify v1.12.1
 	github.com/swaggo/swag v1.16.6
@@ -94,7 +94,7 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.19.1 // indirect
+	github.com/klauspost/compress v1.20.0 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/parsers/yaml v1.1.1 // indirect
 	github.com/knadh/koanf/providers/env/v2 v2.0.1 // indirect
@@ -120,7 +120,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/netcracker/qubership-core-lib-go-error-handling/v3 v3.7.0 // indirect
+	github.com/netcracker/qubership-core-lib-go-error-handling/v3 v3.7.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/openzipkin/zipkin-go v0.4.3 // indirect
@@ -150,12 +150,12 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
-	go.opentelemetry.io/contrib/propagators/b3 v1.45.0 // indirect
-	go.opentelemetry.io/otel v1.45.0 // indirect
-	go.opentelemetry.io/otel/exporters/zipkin v1.45.0 // indirect
-	go.opentelemetry.io/otel/metric v1.45.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.45.0 // indirect
-	go.opentelemetry.io/otel/trace v1.45.0 // indirect
+	go.opentelemetry.io/contrib/propagators/b3 v1.46.0 // indirect
+	go.opentelemetry.io/otel v1.46.0 // indirect
+	go.opentelemetry.io/otel/exporters/zipkin v1.46.0 // indirect
+	go.opentelemetry.io/otel/metric v1.46.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
+	go.opentelemetry.io/otel/trace v1.46.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.56.0 // indirect
