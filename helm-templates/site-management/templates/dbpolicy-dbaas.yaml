@@ -2,7 +2,7 @@
 apiVersion: dbaas.netcracker.com/v1
 kind: DatabaseAccessPolicy
 metadata:
-  name: {{ .Values.SERVICE_NAME }}
+  name: '{{ .Values.SERVICE_NAME }}-database-access-policy'
   namespace: {{ .Values.NAMESPACE }}
   labels:
     name: '{{ .Values.SERVICE_NAME }}'
