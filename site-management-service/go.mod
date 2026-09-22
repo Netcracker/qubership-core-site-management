@@ -10,11 +10,11 @@ require (
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.12.0
-	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.7.1
-	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.5.1
+	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.7.2
+	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.5.2
 	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.11.0
 	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.9.0
-	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.6.0
+	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.6.1
 	github.com/netcracker/qubership-core-lib-go/v3 v3.14.1
 	github.com/smarty/assertions v1.16.0
 	github.com/stretchr/testify v1.12.1
@@ -162,7 +162,7 @@ require (
 	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa // indirect
 	golang.org/x/mod v0.40.0 // indirect
 	golang.org/x/net v0.58.0 // indirect
-	golang.org/x/sync v0.22.0 // indirect
+	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
 	golang.org/x/tools v0.49.0 // indirect
