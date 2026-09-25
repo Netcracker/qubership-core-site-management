@@ -6,20 +6,20 @@ metadata:
   namespace: '{{ .Values.NAMESPACE }}'
   labels:
     name: '{{ .Values.SERVICE_NAME }}'
-    app.kubernetes.io/name: 'site-management'
+    app.kubernetes.io/name: '{{ .Values.SERVICE_NAME }}'
     app.kubernetes.io/part-of: 'Cloud-Core'
     app.kubernetes.io/managed-by: 'saasDeployer'
     deployment.netcracker.com/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
 spec:
   operatorNamespace: {{ (index (splitList "." (first (splitList ":" (last (splitList "://" $.Values.API_DBAAS_ADDRESS))))) 1) | quote }}
   # Mirrors createSiteManagementClassifier in site-management-service/lib/runner.go.
-  # microserviceName is the literal microservice.name from application.yaml, which no
-  # deployment value overrides, so it is not templated from SERVICE_NAME.
+  # microserviceName is microservice.name, which deployment.yaml sets from SERVICE_NAME
+  # through MICROSERVICE_NAME.
   # classifier.namespace is omitted on purpose: the operator defaults it from
   # metadata.namespace, which is the same value the service reads from
   # microservice.namespace (MICROSERVICE_NAMESPACE, a fieldRef on metadata.namespace).
   classifier:
-    microserviceName: 'site-management'
+    microserviceName: '{{ .Values.SERVICE_NAME }}'
     scope: service
     extraKeys:
       # The service adds dbClassifier as a top-level classifier key, so it must stay
