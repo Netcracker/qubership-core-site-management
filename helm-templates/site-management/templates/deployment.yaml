@@ -75,6 +75,14 @@ spec:
               - name: topology
                 configMap:
                   name: topology
+{{- if .Capabilities.APIVersions.Has "dbaas.netcracker.com/v1" }}
+              # Deliberately not optional: an optional volume would let the pod start before
+              # the operator has written the Secret, the client would miss the mounted lookup,
+              # fall back to REST and cache that result for the life of the process.
+              - name: '{{ .Values.SERVICE_NAME }}-postgresql-service-default-secret'
+                secret:
+                  secretName: '{{ .Values.SERVICE_NAME }}-postgresql-service-default-credentials'
+{{- end }}
 {{- if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
               - name: sslcerts
                 emptyDir: {}
@@ -98,6 +106,8 @@ spec:
                     valueFrom:
                         fieldRef:
                             fieldPath: metadata.namespace
+                -   name: MICROSERVICE_NAME
+                    value: '{{ .Values.SERVICE_NAME }}'
                 -   name: MICROSERVICE_NAMESPACE
                     valueFrom:
                         fieldRef:
@@ -175,6 +185,12 @@ spec:
                   - name: topology
                     mountPath: /etc/topology
                     readOnly: true
+{{- if .Capabilities.APIVersions.Has "dbaas.netcracker.com/v1" }}
+                  # The mount directory has to be named after DatabaseSecretClaim.spec.secretName.
+                  - name: '{{ .Values.SERVICE_NAME }}-postgresql-service-default-secret'
+                    mountPath: '/etc/secrets/dbaas-secrets/{{ .Values.SERVICE_NAME }}-postgresql-service-default-credentials'
+                    readOnly: true
+{{- end }}
 {{- if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
                   - name: sslcerts
                     mountPath: /etc/ssl/certs
