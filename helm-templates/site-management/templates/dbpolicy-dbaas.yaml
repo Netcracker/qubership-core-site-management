@@ -6,13 +6,13 @@ metadata:
   namespace: {{ .Values.NAMESPACE }}
   labels:
     name: '{{ .Values.SERVICE_NAME }}'
-    app.kubernetes.io/name: 'site-management'
+    app.kubernetes.io/name: '{{ .Values.SERVICE_NAME }}'
     app.kubernetes.io/part-of: 'Cloud-Core'
     app.kubernetes.io/managed-by: 'saasDeployer'
     deployment.netcracker.com/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
 spec:
   operatorNamespace: {{ (index (splitList "." (first (splitList ":" (last (splitList "://" $.Values.API_DBAAS_ADDRESS))))) 1) | quote }}
-  microserviceName: 'site-management'
+  microserviceName: '{{ .Values.SERVICE_NAME }}'
   # Mirrors the legacy DbPolicy: disableGlobalPermissions alone, with no grants. The CRD
   # accepts that shape since Netcracker/qubership-dbaas#767.
   disableGlobalPermissions: true
