@@ -79,9 +79,9 @@ spec:
               # Deliberately not optional: an optional volume would let the pod start before
               # the operator has written the Secret, the client would miss the mounted lookup,
               # fall back to REST and cache that result for the life of the process.
-              - name: '{{ .Values.SERVICE_NAME }}-postgresql-service-default-default-secret'
+              - name: '{{ .Values.SERVICE_NAME }}-postgresql-service-default-secret'
                 secret:
-                  secretName: '{{ .Values.SERVICE_NAME }}-postgresql-service-default-default-credentials'
+                  secretName: '{{ .Values.SERVICE_NAME }}-postgresql-service-default-credentials'
 {{- end }}
 {{- if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
               - name: sslcerts
@@ -187,8 +187,8 @@ spec:
                     readOnly: true
 {{- if .Capabilities.APIVersions.Has "dbaas.netcracker.com/v1" }}
                   # The mount directory has to be named after DatabaseSecretClaim.spec.secretName.
-                  - name: '{{ .Values.SERVICE_NAME }}-postgresql-service-default-default-secret'
-                    mountPath: '/etc/secrets/dbaas-secrets/{{ .Values.SERVICE_NAME }}-postgresql-service-default-default-credentials'
+                  - name: '{{ .Values.SERVICE_NAME }}-postgresql-service-default-secret'
+                    mountPath: '/etc/secrets/dbaas-secrets/{{ .Values.SERVICE_NAME }}-postgresql-service-default-credentials'
                     readOnly: true
 {{- end }}
 {{- if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
