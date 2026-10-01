@@ -13,12 +13,43 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/netcracker/qubership-core-lib-go/v3/security"
+	"github.com/netcracker/qubership-core-lib-go/v3/security/rest"
+	"github.com/netcracker/qubership-core-lib-go/v3/security/tokensource"
+	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
 	. "github.com/smarty/assertions"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
+
+type stubTokenProvider struct {
+	security.DummyToken
+}
+
+func (p *stubTokenProvider) GetToken(context.Context) (string, error) {
+	return "legacy-token", nil
+}
+
+type stubTokenSource struct {
+	err error
+}
+
+func (s *stubTokenSource) GetAudienceToken(context.Context, tokensource.TokenAudience) (string, error) {
+	return "k8s-token", s.err
+}
+
+func (s *stubTokenSource) GetServiceAccountToken(context.Context) (string, error) {
+	return "", nil
+}
+
+var k8sTokenSource = &stubTokenSource{}
+
+func init() {
+	serviceloader.Register(100, &stubTokenProvider{})
+	serviceloader.Register(100, k8sTokenSource)
+}
 
 type fakeWebsocketExecutor struct {
 	handler http.Handler
@@ -31,15 +62,7 @@ type badFakeWebsocketExecutor struct {
 	err            error
 }
 
-func (*fakeWebsocketExecutor) collectHeaders(ctx context.Context, idpAddress url.URL) (http.Header, error) {
-	return http.Header{}, nil
-}
-
-func (executor *badFakeWebsocketExecutor) collectHeaders(ctx context.Context, idpAddress url.URL) (http.Header, error) {
-	return http.Header{}, nil
-}
-
-func (fakeWebsocketExecutor *fakeWebsocketExecutor) createWebsocketConnect(targetAddress url.URL, header http.Header) (*websocket.Conn, *http.Response, error) {
+func (fakeWebsocketExecutor *fakeWebsocketExecutor) connect(ctx context.Context, targetAddress url.URL) (*websocket.Conn, *http.Response, error) {
 	server := httptest.NewServer(fakeWebsocketExecutor.handler)
 	defer server.Close()
 	dialer := websocket.Dialer{}
@@ -48,7 +71,7 @@ func (fakeWebsocketExecutor *fakeWebsocketExecutor) createWebsocketConnect(targe
 	return dialer.Dial("ws://"+address(), nil)
 }
 
-func (executor *badFakeWebsocketExecutor) createWebsocketConnect(targetAddress url.URL, header http.Header) (*websocket.Conn, *http.Response, error) {
+func (executor *badFakeWebsocketExecutor) connect(ctx context.Context, targetAddress url.URL) (*websocket.Conn, *http.Response, error) {
 	if executor.attemptCounter >= 10 {
 		panic("Panic during websocket connect creation due to no more attempts")
 	} else {
@@ -299,10 +322,16 @@ func closeOpenedConnection(w http.ResponseWriter, r *http.Request) {
 	c.Close()
 }
 
-func TestDefaultWebsocketExecutor_DialsWithM2MToken(t *testing.T) {
-	var gotHeaders http.Header
+// paasMediationServer accepts a websocket from a request whose Authorization is acceptedAuth, answers 401 to any other,
+// and records the headers of each request.
+func paasMediationServer(t *testing.T, acceptedAuth string) (url.URL, *[]http.Header) {
+	var gotHeaders []http.Header
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotHeaders = r.Header.Clone()
+		gotHeaders = append(gotHeaders, r.Header.Clone())
+		if r.Header.Get("Authorization") != acceptedAuth {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
 		conn, err := (&websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}).Upgrade(w, r, nil)
 		if err == nil {
 			conn.Close()
@@ -311,15 +340,47 @@ func TestDefaultWebsocketExecutor_DialsWithM2MToken(t *testing.T) {
 	t.Cleanup(server.Close)
 	serverURL, err := url.Parse(server.URL)
 	assert.NoError(t, err)
-	target := url.URL{Scheme: "ws", Host: serverURL.Host, Path: "/watchapi/v2/paas-mediation/namespaces/test-namespace/routes"}
-	executor := &defaultWebsocketExecutor{getToken: func(context.Context) (string, error) { return "m2m", nil }}
+	return url.URL{Scheme: "ws", Host: serverURL.Host, Path: "/watchapi/v2/paas-mediation/namespaces/test-namespace/routes"}, &gotHeaders
+}
 
-	header, err := executor.collectHeaders(context.Background(), target)
-	assert.NoError(t, err)
-	conn, _, err := executor.createWebsocketConnect(target, header)
+func newExecutor(t *testing.T, mode security.M2MAuthMode) *defaultWebsocketExecutor {
+	t.Setenv(security.M2MAuthModeEnv, string(mode))
+	return &defaultWebsocketExecutor{m2mRequestSender: rest.NewM2MRequestSender()}
+}
+
+func TestDefaultWebsocketExecutor_DialsWithM2MToken(t *testing.T) {
+	target, gotHeaders := paasMediationServer(t, "Bearer legacy-token")
+
+	conn, _, err := newExecutor(t, security.M2MAuthModeLegacy).connect(context.Background(), target)
 
 	assert.NoError(t, err)
 	conn.Close()
-	assert.Equal(t, "Bearer m2m", gotHeaders.Get("Authorization"))
-	assert.Equal(t, "https://"+serverURL.Host, gotHeaders.Get("Origin"))
+	assert.Len(t, *gotHeaders, 1)
+	assert.Equal(t, "Bearer legacy-token", (*gotHeaders)[0].Get("Authorization"))
+	assert.Equal(t, "https://"+target.Host, (*gotHeaders)[0].Get("Origin"))
+}
+
+func TestDefaultWebsocketExecutor_HybridRedialsWithLegacyTokenAfter401(t *testing.T) {
+	target, gotHeaders := paasMediationServer(t, "Bearer legacy-token")
+
+	conn, resp, err := newExecutor(t, security.M2MAuthModeHybrid).connect(context.Background(), target)
+
+	assert.NoError(t, err)
+	conn.Close()
+	assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
+	var gotAuth []string
+	for _, h := range *gotHeaders {
+		gotAuth = append(gotAuth, h.Get("Authorization"))
+	}
+	assert.Equal(t, []string{"Bearer k8s-token", "Bearer legacy-token"}, gotAuth)
+}
+
+func TestDefaultWebsocketExecutor_K8sReturns401WithoutRedialing(t *testing.T) {
+	target, gotHeaders := paasMediationServer(t, "Bearer legacy-token")
+
+	_, resp, err := newExecutor(t, security.M2MAuthModeK8s).connect(context.Background(), target)
+
+	assert.Error(t, err)
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	assert.Len(t, *gotHeaders, 1)
 }

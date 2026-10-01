@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/netcracker/qubership-core-lib-go/v3/configloader"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
-	"github.com/netcracker/qubership-core-lib-go/v3/security"
+	"github.com/netcracker/qubership-core-lib-go/v3/security/rest"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
 )
 
@@ -28,11 +28,10 @@ type (
 		wsRetryInterval   time.Duration
 	}
 	websocketExecutor interface {
-		collectHeaders(ctx context.Context, idpAddress url.URL) (http.Header, error)
-		createWebsocketConnect(targetAddress url.URL, header http.Header) (*websocket.Conn, *http.Response, error)
+		connect(ctx context.Context, targetAddress url.URL) (*websocket.Conn, *http.Response, error)
 	}
 	defaultWebsocketExecutor struct {
-		getToken func(context.Context) (string, error)
+		m2mRequestSender *rest.M2MRequestSender
 	}
 	Adapter func(t []byte) ([][]byte, error)
 )
@@ -51,7 +50,7 @@ func CreateWebSocketClientWithAdapter(ctx context.Context, channel *chan []byte,
 		bus:               *channel,
 		namespace:         namespace,
 		resource:          resource,
-		websocketExecutor: &defaultWebsocketExecutor{getToken: security.GetTokenFunc()},
+		websocketExecutor: &defaultWebsocketExecutor{m2mRequestSender: rest.NewM2MRequestSender()},
 		adapter:           adapter,
 		wsRetryInterval:   configloader.GetKoanf().Duration("paas-mediation.ws-retry-interval"),
 	}
@@ -72,12 +71,7 @@ func (c *WebSocketClient) initWebsocketClient(ctx context.Context, u url.URL) {
 	for {
 		loggerWS.InfoC(ctx, "Initialize web socket client with address: '%s'", u.String())
 
-		header, err := c.websocketExecutor.collectHeaders(ctx, u)
-		if err != nil {
-			loggerWS.ErrorC(ctx, "Error during headers collections: %+v", err.Error())
-		}
-
-		conn, resp, err := c.websocketExecutor.createWebsocketConnect(u, header)
+		conn, resp, err := c.websocketExecutor.connect(ctx, u)
 		if err != nil {
 			if resp != nil {
 				b, _ := ioutil.ReadAll(resp.Body)
@@ -129,21 +123,24 @@ func (c *WebSocketClient) initWebsocketClient(ctx context.Context, u url.URL) {
 	}
 }
 
-func (*defaultWebsocketExecutor) createWebsocketConnect(targetAddress url.URL, header http.Header) (*websocket.Conn, *http.Response, error) {
+// connect dials targetAddress with the M2M token. In hybrid mode a 401 to the Kubernetes token makes it dial again
+// with the legacy M2M token.
+func (websocketExecutor *defaultWebsocketExecutor) connect(ctx context.Context, targetAddress url.URL) (*websocket.Conn, *http.Response, error) {
 	dialer := websocket.Dialer{}
-	return dialer.Dial(targetAddress.Scheme+"://"+targetAddress.Host+targetAddress.Path, header)
-}
-
-func (websocketExecutor *defaultWebsocketExecutor) collectHeaders(ctx context.Context, url url.URL) (http.Header, error) {
-	m2mToken, err := websocketExecutor.getToken(ctx)
-	if err != nil {
-		loggerWS.ErrorC(ctx, "Error during acquiring m2m token: %+v", err)
-		return nil, err
-	}
-	header := http.Header{}
-	header.Add("Authorization", fmt.Sprintf("Bearer %s", m2mToken))
-	header.Add("Content-Type", "application/json")
-	header.Add("Host", url.Host)
-	header.Add("Origin", "https://"+url.Host)
-	return header, nil
+	var conn *websocket.Conn
+	var resp *http.Response
+	err := websocketExecutor.m2mRequestSender.Send(ctx, targetAddress.String(), func(token string) (int, error) {
+		header := http.Header{}
+		header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+		header.Add("Content-Type", "application/json")
+		header.Add("Host", targetAddress.Host)
+		header.Add("Origin", "https://"+targetAddress.Host)
+		var err error
+		conn, resp, err = dialer.Dial(targetAddress.Scheme+"://"+targetAddress.Host+targetAddress.Path, header)
+		if resp == nil {
+			return 0, err
+		}
+		return resp.StatusCode, err
+	})
+	return conn, resp, err
 }
