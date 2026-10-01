@@ -298,3 +298,28 @@ func closeOpenedConnection(w http.ResponseWriter, r *http.Request) {
 	}
 	c.Close()
 }
+
+func TestDefaultWebsocketExecutor_DialsWithM2MToken(t *testing.T) {
+	var gotHeaders http.Header
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotHeaders = r.Header.Clone()
+		conn, err := (&websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}).Upgrade(w, r, nil)
+		if err == nil {
+			conn.Close()
+		}
+	}))
+	t.Cleanup(server.Close)
+	serverURL, err := url.Parse(server.URL)
+	assert.NoError(t, err)
+	target := url.URL{Scheme: "ws", Host: serverURL.Host, Path: "/watchapi/v2/paas-mediation/namespaces/test-namespace/routes"}
+	executor := &defaultWebsocketExecutor{getToken: func(context.Context) (string, error) { return "m2m", nil }}
+
+	header, err := executor.collectHeaders(context.Background(), target)
+	assert.NoError(t, err)
+	conn, _, err := executor.createWebsocketConnect(target, header)
+
+	assert.NoError(t, err)
+	conn.Close()
+	assert.Equal(t, "Bearer m2m", gotHeaders.Get("Authorization"))
+	assert.Equal(t, "https://"+serverURL.Host, gotHeaders.Get("Origin"))
+}
