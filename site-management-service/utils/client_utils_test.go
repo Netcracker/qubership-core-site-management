@@ -134,7 +134,7 @@ func TestDoRequest_SendsTokenAndBody(t *testing.T) {
 
 	resp, err := DoRequest(context.Background(), fasthttp.MethodPost, "http://target:8080/api", []byte("payload"), logging.GetLogger(""))
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, fasthttp.StatusOK, resp.StatusCode())
 	assert.Equal(t, "Bearer legacy-token", gotAuth)
 	assert.Equal(t, "payload", gotBody)
@@ -155,7 +155,7 @@ func TestDoRequest_Returns401WithoutResending(t *testing.T) {
 
 			resp, err := DoRequest(context.Background(), fasthttp.MethodGet, "http://target:8080/api", nil, logging.GetLogger(""))
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, fasthttp.StatusUnauthorized, resp.StatusCode())
 			assert.Equal(t, []string{tt.wantAuth}, *gotAuth)
 		})
@@ -173,7 +173,7 @@ func TestDoRequest_HybridResendsWithLegacyTokenAfter401(t *testing.T) {
 	}
 
 	resp, err := DoRequest(context.Background(), fasthttp.MethodPost, "http://target:8080/api", []byte("payload"), logging.GetLogger(""))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, fasthttp.StatusOK, resp.StatusCode())
 	_, err = DoRequest(context.Background(), fasthttp.MethodPost, "http://target:8080/api", []byte("payload"), logging.GetLogger(""))
 
@@ -189,7 +189,7 @@ func TestDoRetryRequest_Returns401WithoutResending(t *testing.T) {
 
 	resp, err := DoRetryRequest(context.Background(), fasthttp.MethodGet, "http://target:8080/api", nil, logging.GetLogger(""))
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, fasthttp.StatusUnauthorized, resp.StatusCode())
 	assert.Len(t, *gotAuth, 1)
 }
@@ -201,7 +201,7 @@ func TestDoRetryRequest_HybridResendsWithLegacyTokenAfter401(t *testing.T) {
 
 	resp, err := DoRetryRequest(context.Background(), fasthttp.MethodGet, "http://target:8080/api", nil, logging.GetLogger(""))
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, fasthttp.StatusOK, resp.StatusCode())
 	assert.Equal(t, []string{"Bearer k8s-token", "Bearer legacy-token"}, *gotAuth)
 }
@@ -222,7 +222,7 @@ func TestDoRetryRequest_RetriesAfter5xx(t *testing.T) {
 
 	resp, err := DoRetryRequest(context.Background(), fasthttp.MethodPost, "http://target:8080/api", []byte("payload"), logging.GetLogger(""))
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, fasthttp.StatusOK, resp.StatusCode())
 	assert.Equal(t, []string{"payload", "payload"}, gotBodies)
 }

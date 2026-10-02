@@ -20,6 +20,7 @@ import (
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
 	. "github.com/smarty/assertions"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -353,7 +354,7 @@ func TestDefaultWebsocketExecutor_DialsWithM2MToken(t *testing.T) {
 
 	conn, _, err := newExecutor(t, security.M2MAuthModeLegacy).connect(context.Background(), target)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	conn.Close()
 	assert.Len(t, *gotHeaders, 1)
 	assert.Equal(t, "Bearer legacy-token", (*gotHeaders)[0].Get("Authorization"))
@@ -365,7 +366,7 @@ func TestDefaultWebsocketExecutor_HybridRedialsWithLegacyTokenAfter401(t *testin
 
 	conn, resp, err := newExecutor(t, security.M2MAuthModeHybrid).connect(context.Background(), target)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	conn.Close()
 	assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
 	var gotAuth []string
@@ -380,7 +381,8 @@ func TestDefaultWebsocketExecutor_K8sReturns401WithoutRedialing(t *testing.T) {
 
 	_, resp, err := newExecutor(t, security.M2MAuthModeK8s).connect(context.Background(), target)
 
-	assert.Error(t, err)
+	require.Error(t, err)
+	require.NotNil(t, resp)
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	assert.Len(t, *gotHeaders, 1)
 }
