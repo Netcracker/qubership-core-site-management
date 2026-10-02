@@ -22,10 +22,10 @@ jobs:
             exit 0
           fi
 
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
-      - uses: netcracker/qubership-workflow-hub/actions/pr-assigner@8c6dbeb901920bae9f40d7d7b646d8d9127e1ce7 # v2.4.0
+      - uses: netcracker/qubership-workflow-hub/actions/pr-assigner@0eefd4976131d113c986281eed8bc642b6da303d # v2.8.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

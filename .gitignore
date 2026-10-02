@@ -1,7 +1,7 @@
 /.idea
 /Gopkg.lock
 /vendor
-/site-management-integration-tests/target
+**/target/
 **/*.iml
 /site-management-service/bin/site-management-service-1.0.0.0-SNAPSHOT
 /site-management-service/bin/site-management-service-1.0.0.0-SNAPSHOT.mvn-golang
