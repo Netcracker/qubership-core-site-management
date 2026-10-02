@@ -165,14 +165,21 @@ func TestDoRequest_Returns401WithoutResending(t *testing.T) {
 func TestDoRequest_HybridResendsWithLegacyTokenAfter401(t *testing.T) {
 	useM2MAuthMode(t, security.M2MAuthModeHybrid)
 	gotAuth := respondInTurn(fasthttp.StatusUnauthorized, fasthttp.StatusOK, fasthttp.StatusOK)
+	var gotBodies []string
+	do := getConfig().do
+	getConfig().do = func(req *fasthttp.Request, resp *fasthttp.Response) error {
+		gotBodies = append(gotBodies, string(req.Body()))
+		return do(req, resp)
+	}
 
-	resp, err := DoRequest(context.Background(), fasthttp.MethodGet, "http://target:8080/api", nil, logging.GetLogger(""))
+	resp, err := DoRequest(context.Background(), fasthttp.MethodPost, "http://target:8080/api", []byte("payload"), logging.GetLogger(""))
 	assert.NoError(t, err)
 	assert.Equal(t, fasthttp.StatusOK, resp.StatusCode())
-	_, err = DoRequest(context.Background(), fasthttp.MethodGet, "http://target:8080/api", nil, logging.GetLogger(""))
+	_, err = DoRequest(context.Background(), fasthttp.MethodPost, "http://target:8080/api", []byte("payload"), logging.GetLogger(""))
 
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"Bearer k8s-token", "Bearer legacy-token", "Bearer legacy-token"}, *gotAuth, "the target keeps the legacy token")
+	assert.Equal(t, []string{"payload", "payload", "payload"}, gotBodies)
 }
 
 func TestDoRetryRequest_Returns401WithoutResending(t *testing.T) {
