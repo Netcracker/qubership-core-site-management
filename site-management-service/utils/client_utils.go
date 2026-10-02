@@ -73,8 +73,8 @@ func DoRetryRequest(logContext context.Context, method string, url string, data 
 	return nil, errors.New(errMsg)
 }
 
-// DoRequest sends the request with the M2M token. In hybrid mode a 401 to the Kubernetes token makes it resend the
-// request with the legacy M2M token.
+// DoRequest sends the request with the M2M token. In hybrid mode it falls back to the legacy M2M token as
+// [rest.M2MRequestSender.Send] does, resending the request after a 401.
 func DoRequest(logContext context.Context, method string, url string, data []byte, logger logging.Logger) (*fasthttp.Response, error) {
 	var response *fasthttp.Response
 	err := getConfig().m2mRequestSender.Send(logContext, url, func(token string) (int, error) {
@@ -143,8 +143,8 @@ func constructRequest(ctx context.Context, method string, url string, data []byt
 	return req, nil
 }
 
-// SecureWebSocketDial dials webSocketURL with the M2M token. In hybrid mode a 401 to the Kubernetes token makes it dial
-// again with the legacy M2M token.
+// SecureWebSocketDial dials webSocketURL with the M2M token. In hybrid mode it falls back to the legacy M2M token as
+// [rest.M2MRequestSender.Send] does, dialing again after a 401.
 func SecureWebSocketDial(logContext context.Context, webSocketURL url.URL, dialer websocket.Dialer, requestHeaders http.Header, logger logging.Logger) (*websocket.Conn, *http.Response, error) {
 	if requestHeaders == nil {
 		logger.WarnC(logContext, "Headers are nil. Creating default headers")

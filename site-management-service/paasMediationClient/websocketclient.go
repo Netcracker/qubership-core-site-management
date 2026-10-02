@@ -123,8 +123,8 @@ func (c *WebSocketClient) initWebsocketClient(ctx context.Context, u url.URL) {
 	}
 }
 
-// connect dials targetAddress with the M2M token. In hybrid mode a 401 to the Kubernetes token makes it dial again
-// with the legacy M2M token.
+// connect dials targetAddress with the M2M token. In hybrid mode it falls back to the legacy M2M token as
+// [rest.M2MRequestSender.Send] does, dialing again after a 401.
 func (websocketExecutor *defaultWebsocketExecutor) connect(ctx context.Context, targetAddress url.URL) (*websocket.Conn, *http.Response, error) {
 	dialer := websocket.Dialer{}
 	var conn *websocket.Conn
