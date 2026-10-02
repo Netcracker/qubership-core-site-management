@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"errors"
+	"github.com/gorilla/websocket"
 	"github.com/netcracker/qubership-core-lib-go/v3/configloader"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
 	"github.com/netcracker/qubership-core-lib-go/v3/security"
@@ -10,8 +11,13 @@ import (
 	"github.com/netcracker/qubership-core-lib-go/v3/security/tokensource"
 	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -212,4 +218,30 @@ func TestDoRetryRequest_RetriesAfter5xx(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, fasthttp.StatusOK, resp.StatusCode())
 	assert.Equal(t, []string{"payload", "payload"}, gotBodies)
+}
+
+func TestSecureWebSocketDial_HybridRedialsWithLegacyTokenAfter401(t *testing.T) {
+	useM2MAuthMode(t, security.M2MAuthModeHybrid)
+	var gotAuth []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = append(gotAuth, r.Header.Get("Authorization"))
+		if r.Header.Get("Authorization") != "Bearer legacy-token" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		conn, err := (&websocket.Upgrader{}).Upgrade(w, r, nil)
+		if err == nil {
+			conn.Close()
+		}
+	}))
+	t.Cleanup(server.Close)
+	wsURL, err := url.Parse("ws" + strings.TrimPrefix(server.URL, "http") + "/watch")
+	require.NoError(t, err)
+
+	conn, resp, err := SecureWebSocketDial(context.Background(), *wsURL, websocket.Dialer{}, nil, logging.GetLogger(""))
+
+	require.NoError(t, err)
+	conn.Close()
+	assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
+	assert.Equal(t, []string{"Bearer k8s-token", "Bearer legacy-token"}, gotAuth)
 }
