@@ -78,6 +78,9 @@ func DoRetryRequest(logContext context.Context, method string, url string, data 
 func DoRequest(logContext context.Context, method string, url string, data []byte, logger logging.Logger) (*fasthttp.Response, error) {
 	var response *fasthttp.Response
 	err := getConfig().m2mRequestSender.Send(logContext, url, func(token string) (int, error) {
+		if response != nil {
+			fasthttp.ReleaseResponse(response)
+		}
 		var err error
 		response, err = doRequestWithToken(logContext, method, url, data, token, logger)
 		if err != nil {
@@ -86,6 +89,9 @@ func DoRequest(logContext context.Context, method string, url string, data []byt
 		return response.StatusCode(), nil
 	})
 	if err != nil {
+		if response != nil {
+			fasthttp.ReleaseResponse(response)
+		}
 		return nil, err
 	}
 	return response, nil
