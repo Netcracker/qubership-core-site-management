@@ -21,7 +21,7 @@ require (
 	github.com/swaggo/swag v1.16.6
 	github.com/testcontainers/testcontainers-go v0.44.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.44.0
-	github.com/uptrace/bun v1.2.18
+	github.com/uptrace/bun v1.3.0
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/valyala/fasthttp v1.75.0
 	k8s.io/apimachinery v0.37.1
