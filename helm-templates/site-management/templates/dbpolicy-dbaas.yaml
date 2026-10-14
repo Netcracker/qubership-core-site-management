@@ -5,7 +5,6 @@ metadata:
   name: '{{ .Values.SERVICE_NAME }}-database-access-policy'
   namespace: {{ .Values.NAMESPACE }}
   labels:
-    name: '{{ .Values.SERVICE_NAME }}'
     app.kubernetes.io/name: '{{ .Values.SERVICE_NAME }}'
     app.kubernetes.io/part-of: 'Cloud-Core'
     app.kubernetes.io/managed-by: 'saasDeployer'
