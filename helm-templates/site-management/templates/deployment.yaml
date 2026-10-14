@@ -106,8 +106,12 @@ spec:
                     valueFrom:
                         fieldRef:
                             fieldPath: metadata.namespace
+{{- if include "coretpl.dbaasOperatorEnabled" $ }}
+                # The DBaaS Operator CRs carry SERVICE_NAME as microserviceName; this keeps the runtime request on
+                # the same identity. Without the operator, microservice.name comes from application.yaml, as before.
                 -   name: MICROSERVICE_NAME
                     value: '{{ .Values.SERVICE_NAME }}'
+{{- end }}
                 -   name: MICROSERVICE_NAMESPACE
                     valueFrom:
                         fieldRef:
