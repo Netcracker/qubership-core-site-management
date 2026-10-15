@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/managed-by: 'saasDeployer'
     deployment.netcracker.com/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
 spec:
-  operatorNamespace: {{ include "coretpl.dbaasOperatorNamespace" $ | quote }}
+  operatorNamespace: {{ include "coretpl.dbaasNamespace" $ | quote }}
   # Mirrors createSiteManagementClassifier in site-management-service/lib/runner.go.
   # microserviceName is microservice.name, which deployment.yaml sets from SERVICE_NAME
   # through MICROSERVICE_NAME.
