@@ -9,13 +9,13 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/mitchellh/hashstructure/v2 v2.0.2
-	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.12.1
-	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.8.0
-	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.5.3
-	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.11.1
+	github.com/netcracker/qubership-core-lib-go-actuator-common/v2 v2.12.3
+	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.8.2
+	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.5.5
+	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.11.3
 	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.9.2-0.20261015082609-207b78da0132
-	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.6.2
-	github.com/netcracker/qubership-core-lib-go/v3 v3.15.0
+	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.6.3
+	github.com/netcracker/qubership-core-lib-go/v3 v3.15.2
 	github.com/smarty/assertions v1.16.0
 	github.com/stretchr/testify v1.12.1
 	github.com/swaggo/swag v1.16.6
@@ -120,7 +120,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/molecule-man/go-brrr v1.1.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/netcracker/qubership-core-lib-go-error-handling/v3 v3.7.2 // indirect
+	github.com/netcracker/qubership-core-lib-go-error-handling/v3 v3.7.4 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/openzipkin/zipkin-go v0.4.3 // indirect
