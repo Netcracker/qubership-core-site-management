@@ -309,8 +309,8 @@ github.com/netcracker/qubership-core-lib-go-error-handling/v3 v3.7.4 h1:nPU+08sW
 github.com/netcracker/qubership-core-lib-go-error-handling/v3 v3.7.4/go.mod h1:ZmKo44dyn5MYBv0mZgTVr6CxjZUltFraXMNudweMuYI=
 github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.11.3 h1:do2JGoYn3IUfnu1CKm+cYxTG3BIxWwwbg8ML4frnBfE=
 github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.11.3/go.mod h1:ACNEiVC3/6jyYGHPN53Vpp0nuiPlJo1WecOSBZ7pnjU=
-github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.9.2-0.20261015082609-207b78da0132 h1:TmGLlcoZ9rU3YpGGCDWV/63YF0y3jPQ1Q88xQQVR7sE=
-github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.9.2-0.20261015082609-207b78da0132/go.mod h1:YJ0Br+EZARpYCIgWPSA2/bCjzbgkLvoykuE/2YO03os=
+github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.10.0 h1:/XC9iyna0MRu90dgo5Hn6DbHNfeqQzTnHHMlajbd5IA=
+github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.10.0/go.mod h1:BHo3VDgTEAF43oQwv+aPckHwFJOXLXCgwotP+u1wL2Y=
 github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.6.3 h1:lXEN6H4Al4bD+IYKvhKj2Z16n7/Bm8l1F8/ickMGJ8Q=
 github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.6.3/go.mod h1:fw80tB3EEiemFtzCJtFIRoDCOlNfzpyof8FQm8TQIIk=
 github.com/netcracker/qubership-core-lib-go/v3 v3.15.2 h1:W4ex49yM62pNOhP/igH7nufSvaKrpMemFEQBGkD85Uc=
