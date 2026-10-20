@@ -3,7 +3,7 @@ package docs
 import (
 	_ "github.com/ghodss/yaml"
 	_ "github.com/swaggo/swag"
-	_ "github.com/urfave/cli/v2"
+	_ "github.com/urfave/cli/v3"
 	_ "sigs.k8s.io/yaml"
 )
 
