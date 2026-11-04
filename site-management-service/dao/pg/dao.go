@@ -3,6 +3,8 @@ package pg
 import (
 	"context"
 	"database/sql"
+	"net/http"
+
 	pgdbaas "github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain"
@@ -10,7 +12,6 @@ import (
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/exceptions"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
 	"github.com/uptrace/bun"
-	"net/http"
 )
 
 type RouteManagerDao struct {
@@ -148,6 +149,17 @@ func (v *RouteManagerDao) Delete(ctx context.Context, tenantId string) error {
 		tenantForDeletion := &domain.TenantDns{TenantId: tenantId}
 		_, err := db.NewDelete().Model(tenantForDeletion).WherePK().Exec(ctx)
 		logger.InfoC(ctx, "Routes deletion err: %s", err)
+		return nil, err
+	})
+	return err
+}
+
+func (v *RouteManagerDao) DeleteIfRemoved(ctx context.Context, tenantId string) error {
+	logger.InfoC(ctx, "Delete removed routes by tenantId: %s", tenantId)
+	_, err := v.usingDB(ctx, func(db *bun.DB) (interface{}, error) {
+		tenantForDeletion := &domain.TenantDns{TenantId: tenantId}
+		_, err := db.NewDelete().Model(tenantForDeletion).WherePK().Where("removed = ?", true).Exec(ctx)
+		logger.InfoC(ctx, "Removed routes deletion err: %s", err)
 		return nil, err
 	})
 	return err

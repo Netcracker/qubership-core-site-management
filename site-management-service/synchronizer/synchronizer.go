@@ -1411,7 +1411,7 @@ func (s *Synchronizer) processSynchronization(ctx context.Context) error {
 	for _, tenant := range *allSettings {
 		if tenant.Removed {
 			logger.DebugC(ctx, "Remove tenant '%s' because removed flag is true", tenant.TenantId)
-			s.dao.Delete(ctx, tenant.TenantId)
+			s.dao.DeleteIfRemoved(ctx, tenant.TenantId)
 		}
 	}
 	logger.InfoC(ctx, "Deleting routes from openshift completed")
