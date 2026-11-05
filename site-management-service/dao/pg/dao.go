@@ -19,10 +19,7 @@ type RouteManagerDao struct {
 }
 
 var (
-	logger         logging.Logger
-	rowsAffectedFn = func(result sql.Result) (int64, error) {
-		return result.RowsAffected()
-	}
+	logger logging.Logger
 )
 
 func init() {
@@ -166,15 +163,20 @@ func (v *RouteManagerDao) DeleteIfRemoved(ctx context.Context, tenantId string) 
 			logger.InfoC(ctx, "Removed routes deletion err: %s", err)
 			return nil, err
 		}
-		n, raErr := rowsAffectedFn(result)
-		if raErr != nil {
-			logger.InfoC(ctx, "Removed routes deletion rows-affected err: %s", raErr)
-			return nil, raErr
-		}
-		logger.InfoC(ctx, "Removed routes deletion affected %d row(s)", n)
-		return nil, nil
+		return nil, logRowsAffected(ctx, result)
 	})
 	return err
+}
+
+// logRowsAffected logs how many rows a delete statement removed.
+func logRowsAffected(ctx context.Context, result sql.Result) error {
+	n, err := result.RowsAffected()
+	if err != nil {
+		logger.InfoC(ctx, "Removed routes deletion rows-affected err: %s", err)
+		return err
+	}
+	logger.InfoC(ctx, "Removed routes deletion affected %d row(s)", n)
+	return nil
 }
 
 func (v *RouteManagerDao) AddRouteToTenants(ctx context.Context, host, serviceName string) error {

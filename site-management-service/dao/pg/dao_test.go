@@ -375,3 +375,16 @@ func truncateTables(pgClient pgdbaas.PgClient, ctx context.Context) {
 	var result domain.TenantDns
 	db.NewTruncateTable().Model(&result).Exec(ctx)
 }
+
+type rowsAffectedResult struct {
+	n   int64
+	err error
+}
+
+func (r rowsAffectedResult) LastInsertId() (int64, error) { return 0, nil }
+func (r rowsAffectedResult) RowsAffected() (int64, error) { return r.n, r.err }
+
+func TestLogRowsAffected(t *testing.T) {
+	assert.NoError(t, logRowsAffected(context.Background(), rowsAffectedResult{n: 1}))
+	assert.EqualError(t, logRowsAffected(context.Background(), rowsAffectedResult{err: fmt.Errorf("rows-affected failed")}), "rows-affected failed")
+}

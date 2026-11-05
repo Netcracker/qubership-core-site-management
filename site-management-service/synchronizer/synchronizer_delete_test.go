@@ -162,3 +162,24 @@ func TestDeleteVirtualService_RemovesRouteFromCacheByKind(t *testing.T) {
 	assert.False(t, httpStillPresent)
 	assert.True(t, grpcStillPresent)
 }
+
+func TestRefreshSettings_ReturnsFreshTenants(t *testing.T) {
+	snapshot := &[]domain.TenantDns{{TenantId: "t", Removed: true}}
+	fresh := &[]domain.TenantDns{{TenantId: "t", Removed: false}}
+
+	result := refreshSettings(context.Background(), func(context.Context) (*[]domain.TenantDns, error) {
+		return fresh, nil
+	}, snapshot)
+
+	assert.Same(t, fresh, result)
+}
+
+func TestRefreshSettings_KeepsSnapshotOnError(t *testing.T) {
+	snapshot := &[]domain.TenantDns{{TenantId: "t", Removed: true}}
+
+	result := refreshSettings(context.Background(), func(context.Context) (*[]domain.TenantDns, error) {
+		return nil, errors.New("db down")
+	}, snapshot)
+
+	assert.Same(t, snapshot, result)
+}

@@ -1378,6 +1378,17 @@ func (s *Synchronizer) Sync(ctx context.Context) {
 	}
 }
 
+// refreshSettings re-reads tenants so that ones changed during the pass are not handled from a stale snapshot.
+// If the re-read fails, the snapshot is returned as is.
+func refreshSettings(ctx context.Context, findAll func(context.Context) (*[]domain.TenantDns, error), snapshot *[]domain.TenantDns) *[]domain.TenantDns {
+	fresh, err := findAll(ctx)
+	if err != nil {
+		logger.ErrorC(ctx, "Error get tenants from database, using snapshot from the start of the pass: %s", err)
+		return snapshot
+	}
+	return fresh
+}
+
 func deleteRemovedTenants(ctx context.Context, tenants []domain.TenantDns, deleteIfRemoved func(context.Context, string) error) {
 	logger.DebugC(ctx, "Delete tenants marked for removing")
 	for _, tenant := range tenants {
@@ -1423,11 +1434,7 @@ func (s *Synchronizer) processSynchronization(ctx context.Context) error {
 	deleteRemovedTenants(ctx, *allSettings, s.dao.DeleteIfRemoved)
 	logger.InfoC(ctx, "Deleting routes from openshift completed")
 
-	if freshSettings, findErr := s.dao.FindAll(ctx); findErr != nil {
-		logger.ErrorC(ctx, "Error get tenants from database, using snapshot from the start of the pass: %s", findErr)
-	} else {
-		allSettings = freshSettings
-	}
+	allSettings = refreshSettings(ctx, s.dao.FindAll, allSettings)
 
 	logger.InfoC(ctx, "Start creating routes in openshift which are presented in database and absent in openshift")
 	for _, tenantSites := range *allSettings {
