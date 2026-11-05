@@ -198,6 +198,44 @@ func (suite *DaoTestSuit) TestDelete() {
 	defer truncateTables(dao.pgClient, suite.ctx)
 }
 
+func (suite *DaoTestSuit) TestDeleteIfRemoved_RemovedTenantIsDeleted() {
+	pgClient := suite.createPgClientForTest()
+	dao := NewRouteManager(pgClient)
+	tenantId := "tenant-1"
+	saveErr := dao.SaveTenant(suite.ctx, &domain.TenantDns{TenantId: tenantId, Removed: true})
+	assert.Nil(suite.T(), saveErr)
+
+	delErr := dao.DeleteIfRemoved(suite.ctx, tenantId)
+	assert.Nil(suite.T(), delErr)
+
+	_, getErr := dao.FindByTenantId(suite.ctx, tenantId)
+	assert.NotNil(suite.T(), getErr)
+	assert.Contains(suite.T(), getErr.Error(), "Tenant tenant-1 is not present in database")
+	defer truncateTables(dao.pgClient, suite.ctx)
+}
+
+func (suite *DaoTestSuit) TestDeleteIfRemoved_RestoredTenantIsKept() {
+	pgClient := suite.createPgClientForTest()
+	dao := NewRouteManager(pgClient)
+	tenantId := "tenant-1"
+	removedTenant := domain.TenantDns{TenantId: tenantId, Removed: true}
+	saveErr := dao.SaveTenant(suite.ctx, &removedTenant)
+	assert.Nil(suite.T(), saveErr)
+
+	// the tenant is restored after the caller has read it as removed
+	restoredTenant := domain.TenantDns{TenantId: tenantId, Active: true, Removed: false}
+	upsErr := dao.Upsert(suite.ctx, restoredTenant)
+	assert.Nil(suite.T(), upsErr)
+
+	delErr := dao.DeleteIfRemoved(suite.ctx, tenantId)
+	assert.Nil(suite.T(), delErr)
+
+	actualTenant, getErr := dao.FindByTenantId(suite.ctx, tenantId)
+	assert.Nil(suite.T(), getErr)
+	assert.Equal(suite.T(), &restoredTenant, actualTenant)
+	defer truncateTables(dao.pgClient, suite.ctx)
+}
+
 func (suite *DaoTestSuit) TestAddRouteToTenants() {
 	pgClient := suite.createPgClientForTest()
 	dao := NewRouteManager(pgClient)

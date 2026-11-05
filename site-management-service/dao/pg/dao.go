@@ -158,9 +158,18 @@ func (v *RouteManagerDao) DeleteIfRemoved(ctx context.Context, tenantId string) 
 	logger.InfoC(ctx, "Delete removed routes by tenantId: %s", tenantId)
 	_, err := v.usingDB(ctx, func(db *bun.DB) (interface{}, error) {
 		tenantForDeletion := &domain.TenantDns{TenantId: tenantId}
-		_, err := db.NewDelete().Model(tenantForDeletion).WherePK().Where("removed = ?", true).Exec(ctx)
-		logger.InfoC(ctx, "Removed routes deletion err: %s", err)
-		return nil, err
+		result, err := db.NewDelete().Model(tenantForDeletion).WherePK().Where("removed = ?", true).Exec(ctx)
+		if err != nil {
+			logger.InfoC(ctx, "Removed routes deletion err: %s", err)
+			return nil, err
+		}
+		n, raErr := result.RowsAffected()
+		if raErr != nil {
+			logger.InfoC(ctx, "Removed routes deletion rows-affected err: %s", raErr)
+			return nil, raErr
+		}
+		logger.InfoC(ctx, "Removed routes deletion affected %d row(s)", n)
+		return nil, nil
 	})
 	return err
 }
