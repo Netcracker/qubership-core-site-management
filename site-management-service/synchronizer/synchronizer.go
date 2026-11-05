@@ -4,6 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
+	"net/http"
+	"net/url"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+	"unicode"
+
 	pgdbaas "github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4"
 	"github.com/netcracker/qubership-core-lib-go/v3/configloader"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
@@ -19,14 +28,6 @@ import (
 	mdomain "github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/tm"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
-	"math/rand"
-	"net/http"
-	"net/url"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
-	"unicode"
 
 	"github.com/go-errors/errors"
 	"github.com/valyala/fasthttp"
@@ -1421,6 +1422,12 @@ func (s *Synchronizer) processSynchronization(ctx context.Context) error {
 	}
 	deleteRemovedTenants(ctx, *allSettings, s.dao.DeleteIfRemoved)
 	logger.InfoC(ctx, "Deleting routes from openshift completed")
+
+	if freshSettings, findErr := s.dao.FindAll(ctx); findErr != nil {
+		logger.ErrorC(ctx, "Error get tenants from database, using snapshot from the start of the pass: %s", findErr)
+	} else {
+		allSettings = freshSettings
+	}
 
 	logger.InfoC(ctx, "Start creating routes in openshift which are presented in database and absent in openshift")
 	for _, tenantSites := range *allSettings {
