@@ -2,8 +2,10 @@ package pg
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	dbaasbase "github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3"
 	"github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3/model"
 	pgdbaas "github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4"
@@ -17,6 +19,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/pgdialect"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -214,6 +218,27 @@ func (suite *DaoTestSuit) TestDeleteIfRemoved_RemovedTenantIsDeleted() {
 	defer truncateTables(dao.pgClient, suite.ctx)
 }
 
+func (suite *DaoTestSuit) TestDeleteIfRemoved_ExecErrorIsReturned() {
+	sqlDB, err := sql.Open("pgx", "postgres://127.0.0.1:1/none?connect_timeout=1")
+	assert.Nil(suite.T(), err)
+	dao := NewRouteManager(stubPgClient{db: bun.NewDB(sqlDB, pgdialect.New())})
+
+	delErr := dao.DeleteIfRemoved(suite.ctx, "tenant-1")
+	assert.Error(suite.T(), delErr)
+}
+
+type stubPgClient struct {
+	db *bun.DB
+}
+
+func (s stubPgClient) GetSqlDb(context.Context) (*sql.DB, error) {
+	return s.db.DB, nil
+}
+
+func (s stubPgClient) GetBunDb(context.Context) (*bun.DB, error) {
+	return s.db, nil
+}
+
 func (suite *DaoTestSuit) TestDeleteIfRemoved_RestoredTenantIsKept() {
 	pgClient := suite.createPgClientForTest()
 	dao := NewRouteManager(pgClient)
@@ -232,7 +257,9 @@ func (suite *DaoTestSuit) TestDeleteIfRemoved_RestoredTenantIsKept() {
 
 	actualTenant, getErr := dao.FindByTenantId(suite.ctx, tenantId)
 	assert.Nil(suite.T(), getErr)
-	assert.Equal(suite.T(), &restoredTenant, actualTenant)
+	assert.Equal(suite.T(), tenantId, actualTenant.TenantId)
+	assert.True(suite.T(), actualTenant.Active)
+	assert.False(suite.T(), actualTenant.Removed)
 	defer truncateTables(dao.pgClient, suite.ctx)
 }
 

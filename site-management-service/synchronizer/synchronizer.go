@@ -1377,6 +1377,18 @@ func (s *Synchronizer) Sync(ctx context.Context) {
 	}
 }
 
+func deleteRemovedTenants(ctx context.Context, tenants []domain.TenantDns, deleteIfRemoved func(context.Context, string) error) {
+	logger.DebugC(ctx, "Delete tenants marked for removing")
+	for _, tenant := range tenants {
+		if tenant.Removed {
+			logger.DebugC(ctx, "Remove tenant '%s' because removed flag is true", tenant.TenantId)
+			if err := deleteIfRemoved(ctx, tenant.TenantId); err != nil {
+				logger.ErrorC(ctx, "Failed to delete removed tenant '%s': %s", tenant.TenantId, err)
+			}
+		}
+	}
+}
+
 func (s *Synchronizer) processSynchronization(ctx context.Context) error {
 	logger.InfoC(ctx, "Start routes sync procedure...")
 	allSettings, err := s.dao.FindAll(ctx)
@@ -1407,15 +1419,7 @@ func (s *Synchronizer) processSynchronization(ctx context.Context) error {
 			}
 		}
 	}
-	logger.DebugC(ctx, "Delete tenants marked for removing")
-	for _, tenant := range *allSettings {
-		if tenant.Removed {
-			logger.DebugC(ctx, "Remove tenant '%s' because removed flag is true", tenant.TenantId)
-			if err := s.dao.DeleteIfRemoved(ctx, tenant.TenantId); err != nil {
-				logger.ErrorC(ctx, "Failed to delete removed tenant '%s': %s", tenant.TenantId, err)
-			}
-		}
-	}
+	deleteRemovedTenants(ctx, *allSettings, s.dao.DeleteIfRemoved)
 	logger.InfoC(ctx, "Deleting routes from openshift completed")
 
 	logger.InfoC(ctx, "Start creating routes in openshift which are presented in database and absent in openshift")

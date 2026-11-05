@@ -2,15 +2,50 @@ package synchronizer
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"testing"
 
+	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain"
 	pmClient "github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient"
 	mdomain "github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/valyala/fasthttp"
 )
+
+func TestDeleteRemovedTenants_DeletesOnlyRemoved(t *testing.T) {
+	var deleted []string
+	tenants := []domain.TenantDns{
+		{TenantId: "keep", Removed: false},
+		{TenantId: "gone", Removed: true},
+	}
+
+	deleteRemovedTenants(context.Background(), tenants, func(_ context.Context, tenantId string) error {
+		deleted = append(deleted, tenantId)
+		return nil
+	})
+
+	assert.Equal(t, []string{"gone"}, deleted)
+}
+
+func TestDeleteRemovedTenants_LogsErrorAndContinues(t *testing.T) {
+	var deleted []string
+	tenants := []domain.TenantDns{
+		{TenantId: "first", Removed: true},
+		{TenantId: "second", Removed: true},
+	}
+
+	deleteRemovedTenants(context.Background(), tenants, func(_ context.Context, tenantId string) error {
+		deleted = append(deleted, tenantId)
+		if tenantId == "first" {
+			return errors.New("delete failed")
+		}
+		return nil
+	})
+
+	assert.Equal(t, []string{"first", "second"}, deleted)
+}
 
 func TestDeleteVirtualService_PassesRouteKindOnDelete(t *testing.T) {
 	namespace := "test-namespace"
