@@ -12,9 +12,14 @@ import (
 type TestHTTPExecutor struct {
 	StatusCode int
 	StatusByMethod map[string]int
+	// OnRequest, when set, is called with every request before the response is built.
+	OnRequest func(method, url string, body []byte)
 }
 
-func (e *TestHTTPExecutor) doRequest(_ context.Context, url string, method string, _ []byte) (*fasthttp.Response, error) {
+func (e *TestHTTPExecutor) doRequest(_ context.Context, url string, method string, body []byte) (*fasthttp.Response, error) {
+	if e.OnRequest != nil {
+		e.OnRequest(method, url, body)
+	}
 	statusCode := e.StatusCode
 	if e.StatusByMethod != nil {
 		if code, ok := e.StatusByMethod[method+":"+url]; ok {
