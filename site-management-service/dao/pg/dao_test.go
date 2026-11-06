@@ -2,8 +2,10 @@ package pg
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	dbaasbase "github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3"
 	"github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3/model"
 	pgdbaas "github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4"
@@ -17,6 +19,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/pgdialect"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -198,6 +202,67 @@ func (suite *DaoTestSuit) TestDelete() {
 	defer truncateTables(dao.pgClient, suite.ctx)
 }
 
+func (suite *DaoTestSuit) TestDeleteIfRemoved_RemovedTenantIsDeleted() {
+	pgClient := suite.createPgClientForTest()
+	dao := NewRouteManager(pgClient)
+	tenantId := "tenant-1"
+	saveErr := dao.SaveTenant(suite.ctx, &domain.TenantDns{TenantId: tenantId, Removed: true})
+	assert.Nil(suite.T(), saveErr)
+
+	delErr := dao.DeleteIfRemoved(suite.ctx, tenantId)
+	assert.Nil(suite.T(), delErr)
+
+	_, getErr := dao.FindByTenantId(suite.ctx, tenantId)
+	assert.NotNil(suite.T(), getErr)
+	assert.Contains(suite.T(), getErr.Error(), "Tenant tenant-1 is not present in database")
+	defer truncateTables(dao.pgClient, suite.ctx)
+}
+
+func (suite *DaoTestSuit) TestDeleteIfRemoved_ExecErrorIsReturned() {
+	sqlDB, err := sql.Open("pgx", "postgres://127.0.0.1:1/none?connect_timeout=1")
+	assert.Nil(suite.T(), err)
+	dao := NewRouteManager(stubPgClient{db: bun.NewDB(sqlDB, pgdialect.New())})
+
+	delErr := dao.DeleteIfRemoved(suite.ctx, "tenant-1")
+	assert.Error(suite.T(), delErr)
+}
+
+type stubPgClient struct {
+	db *bun.DB
+}
+
+func (s stubPgClient) GetSqlDb(context.Context) (*sql.DB, error) {
+	return s.db.DB, nil
+}
+
+func (s stubPgClient) GetBunDb(context.Context) (*bun.DB, error) {
+	return s.db, nil
+}
+
+func (suite *DaoTestSuit) TestDeleteIfRemoved_RestoredTenantIsKept() {
+	pgClient := suite.createPgClientForTest()
+	dao := NewRouteManager(pgClient)
+	tenantId := "tenant-1"
+	removedTenant := domain.TenantDns{TenantId: tenantId, Removed: true}
+	saveErr := dao.SaveTenant(suite.ctx, &removedTenant)
+	assert.Nil(suite.T(), saveErr)
+
+	// the tenant is restored after the caller has read it as removed
+	restoredTenant := domain.TenantDns{TenantId: tenantId, Active: true, Removed: false}
+	upsErr := dao.Upsert(suite.ctx, restoredTenant)
+	assert.Nil(suite.T(), upsErr)
+
+	delErr := dao.DeleteIfRemoved(suite.ctx, tenantId)
+	assert.Nil(suite.T(), delErr)
+
+	actualTenant, getErr := dao.FindByTenantId(suite.ctx, tenantId)
+	assert.Nil(suite.T(), getErr)
+	assert.Equal(suite.T(), tenantId, actualTenant.TenantId)
+	assert.True(suite.T(), actualTenant.Active)
+	assert.False(suite.T(), actualTenant.Removed)
+	defer truncateTables(dao.pgClient, suite.ctx)
+}
+
 func (suite *DaoTestSuit) TestAddRouteToTenants() {
 	pgClient := suite.createPgClientForTest()
 	dao := NewRouteManager(pgClient)
@@ -309,4 +374,17 @@ func truncateTables(pgClient pgdbaas.PgClient, ctx context.Context) {
 	db.NewTruncateTable().Model(&init).Exec(ctx)
 	var result domain.TenantDns
 	db.NewTruncateTable().Model(&result).Exec(ctx)
+}
+
+type rowsAffectedResult struct {
+	n   int64
+	err error
+}
+
+func (r rowsAffectedResult) LastInsertId() (int64, error) { return 0, nil }
+func (r rowsAffectedResult) RowsAffected() (int64, error) { return r.n, r.err }
+
+func TestLogRowsAffected(t *testing.T) {
+	assert.NoError(t, logRowsAffected(context.Background(), rowsAffectedResult{n: 1}))
+	assert.EqualError(t, logRowsAffected(context.Background(), rowsAffectedResult{err: fmt.Errorf("rows-affected failed")}), "rows-affected failed")
 }

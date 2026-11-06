@@ -4,6 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
+	"net/http"
+	"net/url"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+	"unicode"
+
 	pgdbaas "github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4"
 	"github.com/netcracker/qubership-core-lib-go/v3/configloader"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
@@ -19,14 +28,6 @@ import (
 	mdomain "github.com/netcracker/qubership-core-site-management/site-management-service/v2/paasMediationClient/domain"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/tm"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/utils"
-	"math/rand"
-	"net/http"
-	"net/url"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
-	"unicode"
 
 	"github.com/go-errors/errors"
 	"github.com/valyala/fasthttp"
@@ -1377,6 +1378,29 @@ func (s *Synchronizer) Sync(ctx context.Context) {
 	}
 }
 
+// refreshSettings re-reads tenants so that ones changed during the pass are not handled from a stale snapshot.
+// If the re-read fails, the snapshot is returned as is.
+func refreshSettings(ctx context.Context, findAll func(context.Context) (*[]domain.TenantDns, error), snapshot *[]domain.TenantDns) *[]domain.TenantDns {
+	fresh, err := findAll(ctx)
+	if err != nil {
+		logger.ErrorC(ctx, "Error get tenants from database, using snapshot from the start of the pass: %s", err)
+		return snapshot
+	}
+	return fresh
+}
+
+func deleteRemovedTenants(ctx context.Context, tenants []domain.TenantDns, deleteIfRemoved func(context.Context, string) error) {
+	logger.DebugC(ctx, "Delete tenants marked for removing")
+	for _, tenant := range tenants {
+		if tenant.Removed {
+			logger.DebugC(ctx, "Remove tenant '%s' because removed flag is true", tenant.TenantId)
+			if err := deleteIfRemoved(ctx, tenant.TenantId); err != nil {
+				logger.ErrorC(ctx, "Failed to delete removed tenant '%s': %s", tenant.TenantId, err)
+			}
+		}
+	}
+}
+
 func (s *Synchronizer) processSynchronization(ctx context.Context) error {
 	logger.InfoC(ctx, "Start routes sync procedure...")
 	allSettings, err := s.dao.FindAll(ctx)
@@ -1407,14 +1431,10 @@ func (s *Synchronizer) processSynchronization(ctx context.Context) error {
 			}
 		}
 	}
-	logger.DebugC(ctx, "Delete tenants marked for removing")
-	for _, tenant := range *allSettings {
-		if tenant.Removed {
-			logger.DebugC(ctx, "Remove tenant '%s' because removed flag is true", tenant.TenantId)
-			s.dao.Delete(ctx, tenant.TenantId)
-		}
-	}
+	deleteRemovedTenants(ctx, *allSettings, s.dao.DeleteIfRemoved)
 	logger.InfoC(ctx, "Deleting routes from openshift completed")
+
+	allSettings = refreshSettings(ctx, s.dao.FindAll, allSettings)
 
 	logger.InfoC(ctx, "Start creating routes in openshift which are presented in database and absent in openshift")
 	for _, tenantSites := range *allSettings {
