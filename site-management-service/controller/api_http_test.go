@@ -8,9 +8,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/gofiber/fiber/v2"
-	fiberserver "github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2"
-	fiberSec "github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2/security"
+	"github.com/gofiber/fiber/v3"
+	fiberserver "github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v3"
+	fiberSec "github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v3/security"
 	"github.com/netcracker/qubership-core-lib-go/v3/configloader"
 	"github.com/netcracker/qubership-core-lib-go/v3/serviceloader"
 	"github.com/stretchr/testify/assert"
@@ -19,13 +19,13 @@ import (
 
 func TestResponseHelpers(t *testing.T) {
 	app := newHttpApp(t)
-	app.Get("/json", func(c *fiber.Ctx) error {
+	app.Get("/json", func(c fiber.Ctx) error {
 		return respondWithJson(c, http.StatusOK, map[string]string{"name": "value"})
 	})
-	app.Get("/error", func(c *fiber.Ctx) error {
+	app.Get("/error", func(c fiber.Ctx) error {
 		return respondWithError(c, http.StatusBadRequest, "something failed")
 	})
-	app.Get("/no-body", func(c *fiber.Ctx) error {
+	app.Get("/no-body", func(c fiber.Ctx) error {
 		return respondWithoutBody(c, http.StatusCreated)
 	})
 	tests := []struct {
@@ -92,7 +92,7 @@ func newHttpApp(t *testing.T) *fiber.App {
 
 func send(t *testing.T, app *fiber.App, req *http.Request) (int, string, string) {
 	t.Helper()
-	resp, err := app.Test(req, -1)
+	resp, err := app.Test(req, fiber.TestConfig{Timeout: 0})
 	require.NoError(t, err, "%s %s", req.Method, req.RequestURI)
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
