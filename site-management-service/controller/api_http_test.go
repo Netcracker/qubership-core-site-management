@@ -56,6 +56,7 @@ func TestRegisterTenantRejectsUnparsableBody(t *testing.T) {
 		{name: "malformed JSON", contentType: "application/json", body: `{"objectId":`},
 		{name: "no Content-Type", body: `{"objectId":"tenant"}`},
 		{name: "text/plain", contentType: "text/plain", body: `{"objectId":"tenant"}`},
+		{name: "text/json", contentType: "text/json", body: `{"objectId":"tenant"}`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
