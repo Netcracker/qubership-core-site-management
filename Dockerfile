@@ -13,7 +13,7 @@ ARG GOPROXY=https://proxy.golang.org,direct
 ARG GOSUMDB=sum.golang.org
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOFLAGS=-p=2 GOMAXPROCS=2 GOMEMLIMIT=1GiB
 
-WORKDIR /src/source/site-management-service
+WORKDIR /src/${SOURCE_DIR}/site-management-service
 COPY ${SOURCE_DIR}/site-management-service/ .
 # GitLab supplies temporary Docker client credentials for the PostgreSQL suite.
 # Standalone Docker builds run the unit suite in short mode.
