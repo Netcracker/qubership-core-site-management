@@ -2,8 +2,49 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
+  name: '{{ .Values.SERVICE_NAME }}'
+  labels:
     name: '{{ .Values.SERVICE_NAME }}'
-    labels:
+    app.kubernetes.io/name: '{{ .Values.SERVICE_NAME }}'
+    app.kubernetes.io/instance: '{{ cat .Values.SERVICE_NAME "-" .Values.NAMESPACE | nospace | trunc 63 | trimSuffix "-" }}'
+    app.kubernetes.io/version: '{{ .Values.ARTIFACT_DESCRIPTOR_VERSION }}'
+    app.kubernetes.io/component: 'backend'
+    app.kubernetes.io/part-of: 'Cloud-Core'
+    app.kubernetes.io/managed-by: 'saasDeployer'
+    app.kubernetes.io/technology: 'go'
+    deployment.netcracker.com/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
+  annotations:
+    netcracker.cloud/start.stage: '2'
+spec:
+  replicas: {{ .Values.REPLICAS | default 1 }}
+  revisionHistoryLimit: 3
+  strategy:
+    {{- if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "recreate" }}
+    type: Recreate
+    {{- else if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "best_effort_controlled_rollout" }}
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 80%
+    {{- else if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "ramped_slow_rollout" }}
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    {{- else if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "custom_rollout" }}
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.DEPLOYMENT_STRATEGY_MAXSURGE | default "25%" }}
+      maxUnavailable: {{ .Values.DEPLOYMENT_STRATEGY_MAXUNAVAILABLE | default "25%" }}
+    {{- else }}
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    {{- end }}
+  template:
+    metadata:
+      labels:
         name: '{{ .Values.SERVICE_NAME }}'
         app.kubernetes.io/name: '{{ .Values.SERVICE_NAME }}'
         app.kubernetes.io/instance: '{{ cat .Values.SERVICE_NAME "-" .Values.NAMESPACE | nospace | trunc 63 | trimSuffix "-" }}'
@@ -12,229 +53,217 @@ metadata:
         app.kubernetes.io/part-of: 'Cloud-Core'
         app.kubernetes.io/managed-by: 'saasDeployer'
         app.kubernetes.io/technology: 'go'
-        deployment.netcracker.com/sessionId: '{{ .Values.DEPLOYMENT_SESSION_ID }}'
-    annotations:
-        netcracker.cloud/start.stage: '2'
-spec:
-    replicas: {{ .Values.REPLICAS | default 1 }}
-    revisionHistoryLimit: 3
-    strategy:
-    {{- if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "recreate" }}
-      type: Recreate
-    {{- else if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "best_effort_controlled_rollout" }}
-      type: RollingUpdate
-      rollingUpdate:
-        maxSurge: 0
-        maxUnavailable: 80%
-    {{- else if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "ramped_slow_rollout" }}
-      type: RollingUpdate
-      rollingUpdate:
-        maxSurge: 1
-        maxUnavailable: 0
-    {{- else if eq (default "" .Values.DEPLOYMENT_STRATEGY_TYPE) "custom_rollout" }}
-      type: RollingUpdate
-      rollingUpdate:
-        maxSurge: {{ .Values.DEPLOYMENT_STRATEGY_MAXSURGE | default "25%" }}
-        maxUnavailable: {{ .Values.DEPLOYMENT_STRATEGY_MAXUNAVAILABLE | default "25%" }}
-    {{- else }}
-      type: RollingUpdate
-      rollingUpdate:
-        maxSurge: 25%
-        maxUnavailable: 25%
-    {{- end }}
-    template:
-        metadata:
-            labels:
-                name: '{{ .Values.SERVICE_NAME }}'
-                app.kubernetes.io/name: '{{ .Values.SERVICE_NAME }}'
-                app.kubernetes.io/instance: '{{ cat .Values.SERVICE_NAME "-" .Values.NAMESPACE | nospace | trunc 63 | trimSuffix "-" }}'
-                app.kubernetes.io/version: '{{ .Values.ARTIFACT_DESCRIPTOR_VERSION }}'
-                app.kubernetes.io/component: 'backend'
-                app.kubernetes.io/part-of: 'Cloud-Core'
-                app.kubernetes.io/managed-by: 'saasDeployer'
-                app.kubernetes.io/technology: 'go'
-        spec:
-            serviceAccountName: '{{ .Values.SERVICE_NAME }}'
-            volumes:
-              - name: projected-tokens
-                projected:
-                  defaultMode: 292
-                  sources:
-                    - serviceAccountToken:
-                        path: netcracker/token
-                        audience: netcracker
-                        expirationSeconds: 600
-                    - serviceAccountToken:
-                        path: dbaas/token
-                        audience: dbaas
-                        expirationSeconds: 600
-                    - serviceAccountToken:
-                        path: maas/token
-                        audience: maas
-                        expirationSeconds: 600
-              - name: topology
-                configMap:
-                  name: topology
-{{- if include "coretpl.dbaasOperatorEnabled" $ }}
-              # Deliberately not optional: an optional volume would let the pod start before
-              # the operator has written the Secret, the client would miss the mounted lookup,
-              # fall back to REST and cache that result for the life of the process.
-              - name: '{{ .Values.SERVICE_NAME }}-postgresql-service-default-secret'
-                secret:
-                  secretName: '{{ .Values.SERVICE_NAME }}-postgresql-service-default-credentials'
-{{- end }}
-{{- if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
-              - name: sslcerts
-                emptyDir: {}
-              - name: cacerts
-                emptyDir: {}
-{{- end }}
-            containers:
-            -   name: '{{ .Values.SERVICE_NAME }}'
-                image: '{{ .Values.IMAGE_REPOSITORY }}:{{ .Values.TAG }}'
-                args:
-                    - /app/site-management
-                ports:
-                -   name: web
-                    containerPort: 8080
-                    protocol: TCP
-                -   name: tls
-                    containerPort: 8443
-                    protocol: TCP
-                env:
-                -   name: CLOUD_NAMESPACE
-                    valueFrom:
-                        fieldRef:
-                            fieldPath: metadata.namespace
-{{- if include "coretpl.dbaasOperatorEnabled" $ }}
-                # The DBaaS Operator CRs carry SERVICE_NAME as microserviceName; this keeps the runtime request on
-                # the same identity. Without the operator, microservice.name comes from application.yaml, as before.
-                -   name: MICROSERVICE_NAME
-                    value: '{{ .Values.SERVICE_NAME }}'
-{{- end }}
-                -   name: MICROSERVICE_NAMESPACE
-                    valueFrom:
-                        fieldRef:
-                            fieldPath: metadata.namespace
-                -   name: CONFIG_SERVER
-                    value: http://config-server:8080
-                -   name: IDENTITY_PROVIDER_URL
-                    value: http://identity-provider:8080
-                -   name: DBAAS_AGENT
-                    value: http://dbaas-agent:8080
-                -   name: TENANT_DEFAULT_DOMAIN_ZONE
-                    value: '{{ .Values.TENANT_DEFAULT_DOMAIN_ZONE }}'
-                -   name: TRACING_ENABLED
-                    value: '{{ .Values.TRACING_ENABLED }}'
-                -   name: TRACING_HOST
-                    value: '{{ .Values.TRACING_HOST }}'
-                -   name: TRACING_SAMPLER_RATELIMITING
-                    value: '{{ .Values.TRACING_SAMPLER_RATELIMITING }}'
-                -   name: SERVICE_URL_DEFAULT_PROTO
-                    value: '{{ .Values.CLOUD_PROTOCOL }}'
-                -   name: CLOUD_PUBLIC_HOST
-                    value: '{{ .Values.CLOUD_PUBLIC_HOST }}'
-                -   name: COMPOSITE_PLATFORM
-                    value: '{{ not (empty (.Values.BASELINE_ORIGIN)) }}'
-                -   name: BASELINE_PROJ
-                    value: '{{ .Values.BASELINE_PROJ }}'
-                -   name: LOG_LEVEL
-                    value: '{{ .Values.LOG_LEVEL }}'
-                -   name: CONSUL_ENABLED
-                    value: '{{ .Values.CONSUL_ENABLED }}'
+    spec:
+      serviceAccountName: '{{ .Values.SERVICE_NAME }}'
+      volumes:
+        - name: client-credentials
+          secret:
+            secretName: '{{ .Values.SERVICE_NAME }}-client-credentials'
+{{ if .Values.INTERNAL_TLS_ENABLED }}
+        - name: tls
+          secret:
+            secretName: '{{ .Values.SERVICE_NAME }}-tls'
+{{ end }}
+{{ if .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED }}
+        - name: tmp
+          emptyDir: { }
+        - name: sslcerts
+          emptyDir: { }
+        - name: cacerts
+          emptyDir: { }
+{{ end }}
+        - name: '{{ .Values.SSL_SECRET }}'
+          secret:
+            secretName: '{{ .Values.SSL_SECRET }}'
+        - name: projected-tokens
+          projected:
+            defaultMode: 292
+            sources:
+              - serviceAccountToken:
+                  path: netcracker/token
+                  audience: netcracker
+                  expirationSeconds: 600
+              - serviceAccountToken:
+                  path: dbaas/token
+                  audience: dbaas
+                  expirationSeconds: 600
+              - serviceAccountToken:
+                  path: maas/token
+                  audience: maas
+                  expirationSeconds: 600
+        - name: topology
+          configMap:
+            name: topology
+      containers:
+        - name: '{{ .Values.SERVICE_NAME }}'
+          image: '{{ .Values.IMAGE_REPOSITORY }}:{{ .Values.TAG }}'
+          args:
+            - /app/site-management
+          ports:
+            - name: web
+              containerPort: 8080
+              protocol: TCP
+            - name: tls
+              containerPort: 8443
+              protocol: TCP
+          env:
+            - name: API_DBAAS_ADDRESS
+              value: '{{ .Values.API_DBAAS_ADDRESS }}'
+            - name: M2M_AUTH_MODE
+              value: '{{ .Values.M2M_AUTH_MODE }}'
+            - name: CONSUL_AUTH_MODE
+              value: '{{ .Values.CONSUL_AUTH_MODE }}'
+            - name: CERTIFICATE_BUNDLE_{{ .Values.SSL_SECRET }}_MD5SUM
+              value: '{{ .Values.CERTIFICATE_BUNDLE_MD5SUM }}'
+            - name: CLOUD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: MICROSERVICE_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CONFIG_SERVER
+              value: {{ if .Values.INTERNAL_TLS_ENABLED }} https://config-server:8443 {{ else }} http://config-server:8080 {{ end }}
+            - name: IDENTITY_PROVIDER_URL
+              value: {{ if .Values.INTERNAL_TLS_ENABLED }} https://identity-provider:8443 {{ else }} http://identity-provider:8080 {{ end }}
+            - name: DBAAS_AGENT
+              value: {{ if .Values.INTERNAL_TLS_ENABLED }} https://dbaas-agent:8443 {{ else }} http://dbaas-agent:8080 {{ end }}
+            - name: TENANT_DEFAULT_DOMAIN_ZONE
+              value: '{{ .Values.TENANT_DEFAULT_DOMAIN_ZONE }}'
+            - name: INTERNAL_TLS_ENABLED
+              value: '{{ .Values.INTERNAL_TLS_ENABLED }}'
+{{ if .Values.INTERNAL_TLS_ENABLED }}
+            - name: CERTIFICATE_FILE_PATH
+              value: '/etc/tls'
+{{ end }}
+            - name: TRACING_ENABLED
+              value: '{{ .Values.TRACING_ENABLED }}'
+            - name: TRACING_HOST
+              value: '{{ .Values.TRACING_HOST }}'
+            - name: TRACING_SAMPLER_RATELIMITING
+              value: '{{ .Values.TRACING_SAMPLER_RATELIMITING }}'
+            - name: SERVICE_URL_DEFAULT_PROTO
+              value: '{{ .Values.CLOUD_PROTOCOL }}'
+            - name: CLOUD_PUBLIC_HOST
+              value: '{{ .Values.CLOUD_PUBLIC_HOST }}'
+            - name: VAULT_INTEGRATION
+              value: '{{ .Values.VAULT_INTEGRATION }}'
+            - name: VAULT_ADDR
+              value: '{{ .Values.VAULT_ADDR }}'
+            - name: COMPOSITE_PLATFORM
+              value: '{{ not (empty (.Values.BASELINE_ORIGIN)) }}'
+            - name: BASELINE_PROJ
+              value: '{{ .Values.BASELINE_PROJ }}'
+            - name: LOG_LEVEL
+              value: '{{ .Values.LOG_LEVEL }}'
+            - name: CONSUL_ENABLED
+              value: '{{ .Values.CONSUL_ENABLED }}'
                 {{ if .Values.CONSUL_ENABLED }}
-                -   name: CONSUL_URL
-                    value: '{{ .Values.CONSUL_URL }}'
+            - name: CONSUL_URL
+              value: '{{ .Values.CONSUL_URL }}'
                 {{ end }}
-                -   name: CONSUL_AUTH_MODE
-                    value: '{{ .Values.CONSUL_AUTH_MODE }}'
-                -   name: CONSUL_AUTH_METHOD
-                    value: '{{ .Values.CONSUL_AUTH_METHOD }}'
-                -   name: CONSUL_AUTH_AUDIENCE
-                    value: '{{ .Values.CONSUL_AUTH_AUDIENCE }}'
-                -   name: CONSUL_AUTH_FALLBACK_RECHECK_INTERVAL
-                    value: '{{ .Values.CONSUL_AUTH_FALLBACK_RECHECK_INTERVAL }}'
-                -   name: GATEWAY_SYSTEM_TYPE
-                    value: '{{ .Values.GATEWAY_SYSTEM_TYPE }}'
-                -   name: SERVICE_MESH_TYPE
-                    value: '{{ .Values.SERVICE_MESH_TYPE }}'
-                -   name: M2M_AUTH_MODE
-                    value: '{{ .Values.M2M_AUTH_MODE }}'
-                -   name: API_DBAAS_ADDRESS
-                    value: '{{ .Values.API_DBAAS_ADDRESS }}'
-                resources:
-                    requests:
-                        cpu: '{{ .Values.CPU_REQUEST }}'
-                        memory: '{{ .Values.MEMORY_LIMIT }}'
-                    limits:
-                        memory: '{{ .Values.MEMORY_LIMIT }}'
-                        cpu: '{{ .Values.CPU_LIMIT }}'
-                securityContext:
-{{- if eq .Values.PAAS_PLATFORM "KUBERNETES" }}
-                    runAsUser: 10001
-                    runAsGroup: 10001
-{{- end }}
-                    readOnlyRootFilesystem: {{ and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
-                    runAsNonRoot: true
-                    seccompProfile:
-                        type: RuntimeDefault
-                    allowPrivilegeEscalation: false
-                    capabilities:
-                        drop:
-                          - ALL
-                volumeMounts:
-                  - name: projected-tokens
-                    mountPath: /var/run/secrets/tokens
-                    readOnly: true
-                  - name: topology
-                    mountPath: /etc/topology
-                    readOnly: true
-{{- if include "coretpl.dbaasOperatorEnabled" $ }}
-                  # The mount directory has to be named after DatabaseSecretClaim.spec.secretName.
-                  - name: '{{ .Values.SERVICE_NAME }}-postgresql-service-default-secret'
-                    mountPath: '/etc/secrets/dbaas-secrets/{{ .Values.SERVICE_NAME }}-postgresql-service-default-credentials'
-                    readOnly: true
-{{- end }}
-{{- if and .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED (eq .Values.PAAS_PLATFORM "KUBERNETES") }}
-                  - name: sslcerts
-                    mountPath: /etc/ssl/certs
-                  - name: cacerts
-                    mountPath: /usr/local/share/ca-certificates
-{{- end }}
-                livenessProbe:
-                    httpGet:
-                        path: /health
-                        port: web
-                        scheme: HTTP
-                    initialDelaySeconds: 180
-                    timeoutSeconds: 5
-                readinessProbe:
-                    httpGet:
-                        path: /health
-                        port: web
-                        scheme: HTTP
-                    initialDelaySeconds: 1
-                    timeoutSeconds: 5
-                    periodSeconds: 2
-                    failureThreshold: 15
-            topologySpreadConstraints:
+            - name: GATEWAY_SYSTEM_TYPE
+              value: '{{ .Values.GATEWAY_SYSTEM_TYPE }}'
+            - name: SERVICE_MESH_TYPE
+              value: '{{ .Values.SERVICE_MESH_TYPE }}'
+            - name: GATEWAY_SYSTEM_NAMESPACE
+              value: '{{ .Values.GATEWAY_SYSTEM_NAMESPACE }}'
+            - name: GATEWAY_SYSTEM_NAME
+              value: '{{ .Values.GATEWAY_SYSTEM_NAME }}'
+          resources:
+            requests:
+              cpu: '{{ .Values.CPU_REQUEST }}'
+              memory: '{{ .Values.MEMORY_REQUEST }}'
+            limits:
+              memory: '{{ .Values.MEMORY_LIMIT }}'
+              cpu: '{{ .Values.CPU_LIMIT }}'
+          securityContext:
+{{ if eq .Values.PAAS_PLATFORM "KUBERNETES" }}
+            runAsUser: 10001
+            runAsGroup: 10001
+{{ end }}
+            readOnlyRootFilesystem: {{ .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED }}
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: client-credentials
+              mountPath: '/etc/secret'
+              readOnly: true
+{{ if .Values.INTERNAL_TLS_ENABLED }}
+            - name: tls
+              mountPath: '/etc/tls'
+              readOnly: true
+{{ end }}
+{{ if .Values.READONLY_CONTAINER_FILE_SYSTEM_ENABLED }}
+            - name: tmp
+              mountPath: /tmp
+            - name: sslcerts
+              mountPath: /etc/ssl/certs
+            - name: cacerts
+              mountPath: /usr/local/share/ca-certificates
+{{ end }}
+            - name: '{{ .Values.SSL_SECRET }}'
+              mountPath: /tmp/cert/{{ .Values.SSL_SECRET }}
+              readOnly: true
+            - name: projected-tokens
+              mountPath: /var/run/secrets/tokens
+              readOnly: true
+            - name: topology
+              mountPath: /etc/topology
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ if .Values.INTERNAL_TLS_ENABLED }} tls {{ else }} web {{ end }}
+              scheme: {{ if .Values.INTERNAL_TLS_ENABLED }} HTTPS {{ else }} HTTP {{ end }}
+            initialDelaySeconds: {{ ternary 120 .Values.PROBE_LIVENESS_INITIAL_DELAY_SECONDS (lt (int .Values.PROBE_LIVENESS_INITIAL_DELAY_SECONDS) 0) }}
+            timeoutSeconds: {{ ternary 5 .Values.PROBE_LIVENESS_TIMEOUT_SECONDS (lt (int .Values.PROBE_LIVENESS_TIMEOUT_SECONDS) 0) }}
+            periodSeconds: {{ ternary 10 .Values.PROBE_LIVENESS_PERIOD_SECONDS (lt (int .Values.PROBE_LIVENESS_PERIOD_SECONDS) 0) }}
+            failureThreshold: {{ ternary 3 .Values.PROBE_LIVENESS_FAILURE_THRESHOLD (lt (int .Values.PROBE_LIVENESS_FAILURE_THRESHOLD) 0) }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ if .Values.INTERNAL_TLS_ENABLED }} tls {{ else }} web {{ end }}
+              scheme: {{ if .Values.INTERNAL_TLS_ENABLED }} HTTPS {{ else }} HTTP {{ end }}
+            initialDelaySeconds: {{ ternary 5 .Values.PROBE_READINESS_INITIAL_DELAY_SECONDS (lt (int .Values.PROBE_READINESS_INITIAL_DELAY_SECONDS) 0) }}
+            timeoutSeconds: {{ ternary 5 .Values.PROBE_READINESS_TIMEOUT_SECONDS (lt (int .Values.PROBE_READINESS_TIMEOUT_SECONDS) 0) }}
+            periodSeconds: {{ ternary 2 .Values.PROBE_READINESS_PERIOD_SECONDS (lt (int .Values.PROBE_READINESS_PERIOD_SECONDS) 0) }}
+            successThreshold: {{ ternary 1 .Values.PROBE_READINESS_SUCCESS_THRESHOLD (lt (int .Values.PROBE_READINESS_SUCCESS_THRESHOLD) 0) }}
+            failureThreshold: {{ ternary 15 .Values.PROBE_READINESS_FAILURE_THRESHOLD (lt (int .Values.PROBE_READINESS_FAILURE_THRESHOLD) 0) }}
+          startupProbe:
+            httpGet:
+              path: /health
+              port: {{ if .Values.INTERNAL_TLS_ENABLED }} tls {{ else }} web {{ end }}
+              scheme: {{ if .Values.INTERNAL_TLS_ENABLED }} HTTPS {{ else }} HTTP {{ end }}
+            initialDelaySeconds: {{ ternary 5 .Values.PROBE_STARTUP_INITIAL_DELAY_SECONDS (lt (int .Values.PROBE_STARTUP_INITIAL_DELAY_SECONDS) 0) }}
+            timeoutSeconds: {{ ternary 2 .Values.PROBE_STARTUP_TIMEOUT_SECONDS (lt (int .Values.PROBE_STARTUP_TIMEOUT_SECONDS) 0) }}
+            periodSeconds: {{ ternary 5 .Values.PROBE_STARTUP_PERIOD_SECONDS (lt (int .Values.PROBE_STARTUP_PERIOD_SECONDS) 0) }}
+            failureThreshold: {{ ternary 40 .Values.PROBE_STARTUP_FAILURE_THRESHOLD (lt (int .Values.PROBE_READINESS_FAILURE_THRESHOLD) 0) }}
+
+      topologySpreadConstraints:
 {{- if .Values.CLOUD_TOPOLOGIES }}
 {{- range $v := .Values.CLOUD_TOPOLOGIES }}
-              - topologyKey: {{ $v.topologyKey }}
-                maxSkew: {{ $v.maxSkew | default 1 }}
-                whenUnsatisfiable: {{ $v.whenUnsatisfiable | default "ScheduleAnyway" }}
-                labelSelector:
-                  matchLabels:
-                    name: "{{ $.Values.SERVICE_NAME }}"
+        - topologyKey: {{ $v.topologyKey }}
+          maxSkew: {{ $v.maxSkew | default 1 }}
+          whenUnsatisfiable: {{ $v.whenUnsatisfiable | default "ScheduleAnyway" }}
+          labelSelector:
+            matchLabels:
+              name: "{{ $.Values.SERVICE_NAME }}"
 {{- end }}
 {{- else }}
-              - maxSkew: 1
-                topologyKey: "{{ .Values.CLOUD_TOPOLOGY_KEY }}"
-                whenUnsatisfiable: ScheduleAnyway
-                labelSelector:
-                  matchLabels:
-                    name: "{{ .Values.SERVICE_NAME }}"
+        - maxSkew: 1
+          topologyKey: "{{ .Values.CLOUD_TOPOLOGY_KEY }}"
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              name: "{{ .Values.SERVICE_NAME }}"
 {{- end }}
-    selector:
-        matchLabels:
-            name: '{{ .Values.SERVICE_NAME }}'
+  selector:
+    matchLabels:
+      name: '{{ .Values.SERVICE_NAME }}'

@@ -14,6 +14,10 @@ const (
 )
 
 func PreparePostgres(t *testing.T, ctx context.Context) testcontainers.Container {
+	t.Helper()
+	if testing.Short() {
+		t.Skip("PostgreSQL integration tests require Docker")
+	}
 	postgresContainer, err := postgres.Run(ctx,
 		"postgres:16.9-alpine",
 		postgres.WithDatabase(PostgresDatabase),
@@ -22,7 +26,7 @@ func PreparePostgres(t *testing.T, ctx context.Context) testcontainers.Container
 		postgres.BasicWaitStrategies(),
 	)
 	if err != nil {
-		t.Error(err)
+		t.Fatalf("start PostgreSQL test container: %v", err)
 	}
 
 	return postgresContainer

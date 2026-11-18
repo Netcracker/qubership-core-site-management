@@ -42,6 +42,9 @@ type DaoTestSuit struct {
 }
 
 func TestSuite(t *testing.T) {
+	if testing.Short() {
+		t.Skip("PostgreSQL integration tests require Docker")
+	}
 	suite.Run(t, new(DaoTestSuit))
 }
 

@@ -17,6 +17,7 @@ spec:
     - kind: Service
       name: {{ .Values.INTERNAL_SERVICE_NAME }}
       group: ""
+      port: 8080
   rules:
     - matches:
         - path:
@@ -84,6 +85,58 @@ metadata:
 spec:
   parentRefs:
     - name: {{ .Values.ISTIO_PUBLIC_GATEWAY_NAME }}
+      group: "gateway.networking.k8s.io"
+      kind: Gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: "/api/v1/{{ .Values.SERVICE_NAME }}"
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: "/api/v1/"
+      backendRefs:
+        - name: {{ .Values.SERVICE_NAME }}
+          port: 8080
+          group: ""
+          kind: Service
+          weight: 1
+    - matches:
+        - path:
+            type: PathPrefix
+            value: "/api/v4/tenant-manager/manage/tenants/current/service/name"
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: "/api/v1/tenants/current/service/name"
+      backendRefs:
+        - name: {{ .Values.SERVICE_NAME }}
+          port: 8080
+          group: ""
+          kind: Service
+          weight: 1
+---
+# Private routes
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: '{{ .Values.SERVICE_NAME }}-private-routes'
+  labels:
+    app.kubernetes.io/name: '{{ printf "%s-private-routes" .Values.SERVICE_NAME }}'
+    app.kubernetes.io/instance: '{{ printf "%s-private-routes-%s" .Values.SERVICE_NAME .Values.NAMESPACE | trunc 63 | trimSuffix "-" }}'
+    app.kubernetes.io/version: '{{ .Chart.AppVersion }}'
+    app.kubernetes.io/component: '{{ .Values.SERVICE_NAME }}'
+    app.kubernetes.io/part-of: 'Cloud-Core'
+    app.kubernetes.io/managed-by: 'Helm'
+    app.kubernetes.io/processed-by-operator: 'istiod'
+spec:
+  parentRefs:
+    - name: {{ .Values.ISTIO_PRIVATE_GATEWAY_NAME }}
       group: "gateway.networking.k8s.io"
       kind: Gateway
   rules:

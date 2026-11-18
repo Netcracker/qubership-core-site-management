@@ -1,30 +1,31 @@
 # ============== DEPLOYMENT VARIABLES ============================
+INTERNAL_TLS_ENABLED: false
 MONITORING_ENABLED: true
 CLOUD_TOPOLOGY_KEY: kubernetes.io/hostname
 READONLY_CONTAINER_FILE_SYSTEM_ENABLED: true
-IMAGE_REPOSITORY: 'ghcr.io/netcracker/qubership-core-site-management'
 
 # ============== SERVICE VARIABLES ============================
 LOG_LEVEL: "info"
-SERVICE_NAME: 'site-management'
 
 TRACING_ENABLED: false
 TRACING_HOST: 'nc-diagnostic-agent'
 TRACING_SAMPLER_RATELIMITING: 10
+
+VAULT_INTEGRATION: false
 
 TENANT_DEFAULT_DOMAIN_ZONE: ''
 
 K8S_SERVICE_TYPE: 'CLUSTER_IP'
 CONSUL_ENABLED: false
 CONSUL_URL: ''
-CONSUL_AUTH_MODE: ''
-CONSUL_AUTH_METHOD: ''
-CONSUL_AUTH_AUDIENCE: ''
-CONSUL_AUTH_FALLBACK_RECHECK_INTERVAL: ''
 
 GATEWAY_SYSTEM_TYPE: legacy-ingress
+GATEWAY_SYSTEM_NAMESPACE: "gateway-system"
+GATEWAY_SYSTEM_NAME: "default-external-gateway"
 
 ISTIO_PUBLIC_GATEWAY_NAME: 'public-gateway'
+ISTIO_PRIVATE_GATEWAY_NAME: 'private-gateway'
 INTERNAL_SERVICE_NAME: "internal-gateway-service"
 SERVICE_MESH_TYPE: 'Core' # Options: Core, Istio
-M2M_AUTH_MODE: legacy
+
+M2M_AUTH_MODE: 'legacy' # Options: legacy, hybrid, k8s
