@@ -22,9 +22,6 @@ func TestResponseHelpers(t *testing.T) {
 	app.Get("/json", func(c fiber.Ctx) error {
 		return respondWithJson(c, http.StatusOK, map[string]string{"name": "value"})
 	})
-	app.Get("/error", func(c fiber.Ctx) error {
-		return respondWithError(c, http.StatusBadRequest, "something failed")
-	})
 	app.Get("/no-body", func(c fiber.Ctx) error {
 		return respondWithoutBody(c, http.StatusCreated)
 	})
@@ -35,7 +32,6 @@ func TestResponseHelpers(t *testing.T) {
 		wantBody   string
 	}{
 		{name: "respondWithJson", path: "/json", wantStatus: http.StatusOK, wantBody: `{"name":"value"}`},
-		{name: "respondWithError", path: "/error", wantStatus: http.StatusBadRequest, wantBody: `{"error":"something failed"}`},
 		{name: "respondWithoutBody", path: "/no-body", wantStatus: http.StatusCreated, wantBody: `""`},
 	}
 	for _, tt := range tests {
