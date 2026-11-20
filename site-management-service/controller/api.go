@@ -3,7 +3,7 @@ package controller
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/netcracker/qubership-core-lib-go/v3/logging"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/domain"
 	"github.com/netcracker/qubership-core-site-management/site-management-service/v2/exceptions"
