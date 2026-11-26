@@ -1425,9 +1425,8 @@ func (s *Synchronizer) processSynchronization(ctx context.Context) error {
 		if !RouteIsGeneral(&route) && !hostBelongsToActiveTenant(ctx, route.Spec.Host, allSettings) {
 			logger.DebugC(ctx, "Host %s is not present in database or belongs to non-active tenant and will be deleted", route.Spec.Host)
 			r := route
-			err = s.pmClient.DeleteRoute(ctx, &r)
-			if err != nil {
-				logger.ErrorC(ctx, "Error occurred while deleting route with name %s and host %s", route.Metadata.Name, route.Spec.Host)
+			if deleteErr := s.pmClient.DeleteRoute(ctx, &r); deleteErr != nil {
+				logger.ErrorC(ctx, "Error occurred while deleting route with name %s and host %s: %s", route.Metadata.Name, route.Spec.Host, deleteErr)
 			}
 		}
 	}
@@ -1443,6 +1442,10 @@ func (s *Synchronizer) processSynchronization(ctx context.Context) error {
 			for _, siteServices := range tenantSites.Sites {
 				for service, addresses := range siteServices {
 					for _, address := range addresses {
+					    if address.Host() == "" {
+							logger.DebugC(ctx, "Service %s of tenant %s has no host, route is not created", service, tenantSites.TenantId)
+							continue
+						}
 						logger.DebugC(ctx, "Resolving namespace for service %s", service)
 						err := s.isServiceInNamespace(ctx, service, s.pmClient.Namespace)
 						if err == nil {
@@ -1450,7 +1453,10 @@ func (s *Synchronizer) processSynchronization(ctx context.Context) error {
 							currentNamespaceRoutes, err := s.pmClient.GetRoutes(ctx, s.pmClient.Namespace)
 							if err == nil && !isHostPresentInOpenshiftRoutes(ctx, address, service, currentNamespaceRoutes) {
 								logger.DebugC(ctx, "Host %s is not presented in openshift and will be created", address)
-								s.pmClient.CreateRoute(ctx, tenantSites.ToRoute(service, address), s.pmClient.Namespace)
+								if createErr := s.pmClient.CreateRoute(ctx, tenantSites.ToRoute(service, address), s.pmClient.Namespace); createErr != nil {
+									logger.ErrorC(ctx, "Failed to create route for host %s of service %s of tenant %s: %s", address.Host(), service, tenantSites.TenantId, createErr)
+									continue
+								}
 								changedTenants[tenantSites.TenantId] = tenantSites
 							}
 						}
@@ -1461,9 +1467,6 @@ func (s *Synchronizer) processSynchronization(ctx context.Context) error {
 	}
 	logger.InfoC(ctx, "Creating routes in openshift completed")
 
-	if err != nil {
-		logger.ErrorC(ctx, "Error occurred while getting common routes from openshift: %s", err)
-	}
 	for _, tenant := range changedTenants {
 		namespaces := tenant.Namespaces
 		appendElemIfNotExists(&namespaces, s.pmClient.Namespace)

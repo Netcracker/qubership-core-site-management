@@ -860,6 +860,12 @@ func (c *PaasMediationClient) DeleteRoute(ctx context.Context, route *domain.Rou
 	}
 	var result = new(map[string]interface{})
 	if err = c.performRequest(ctx, buildUrl, fasthttp.MethodDelete, nil, fasthttp.StatusOK, result); err != nil {
+		wrapped, ok := err.(wrappers.ErrorWrapper)
+		if ok && wrapped.StatusCode == http.StatusNotFound && strings.Contains(strings.ToLower(wrapped.Message), "not found") {
+        	logger.InfoC(ctx, "Route %s was not found in namespace %s, it is already removed. Clearing cache...", name, namespace)
+        	c.cache.updateRoutesCache(ctx, &RouteUpdate{Type: updateTypeDeleted, RouteObject: *route}) // Drop the cache if the route is gone in the cluster
+        	return nil
+        }
 		logger.ErrorC(ctx, "Error occurred while deleting route with name=%s in namespace=%s: %s", name, namespace, err)
 		return err
 	}
