@@ -24,7 +24,3 @@ mail:
     content: "From: %s\r\nTo: %s\r\nSubject: Tenant %s has been updated\r\n\r\n%s"
 
   log.level: info
-
-consul-source-config:
-  acl:
-    disabled: true
