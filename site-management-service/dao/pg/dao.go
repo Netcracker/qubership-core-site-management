@@ -125,9 +125,16 @@ func (v *RouteManagerDao) Upsert(ctx context.Context, data domain.TenantDns) err
 		tenantDns := &domain.TenantDns{TenantId: data.TenantId}
 		err := db.NewSelect().Model(tenantDns).WherePK().Scan(ctx)
 		if err == nil { // Update
-			if _, err := db.NewUpdate().Model(&data).WherePK().Exec(ctx); err != nil {
+			result, err := db.NewUpdate().Model(&data).WherePK().Exec(ctx)
+			if err != nil {
 				logger.ErrorC(ctx, "Error during Update %+v", err.Error())
 				return nil, err
+			}
+			if rows, rowsErr := result.RowsAffected(); rowsErr == nil && rows == 0 {
+				logger.InfoC(ctx, "Tenant %s was deleted during the update, insert it again", data.TenantId)
+				if _, err := db.NewInsert().Model(&data).Exec(ctx); err != nil {
+					return nil, err
+				}
 			}
 		} else if err == sql.ErrNoRows { // Insert
 			if _, err := db.NewInsert().Model(&data).Exec(ctx); err != nil {
