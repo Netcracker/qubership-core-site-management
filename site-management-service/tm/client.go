@@ -18,9 +18,11 @@ import (
 var tenantManagerPath = "http://internal-gateway-service:8080/api/v4/tenant-manager"
 
 const (
-	tenantsApiPath  = "/manage/tenants"
-	StatusActive    = "ACTIVE"
-	StatusSuspended = "SUSPENDED"
+	tenantsApiPath             = "/manage/tenants"
+	StatusActive               = "ACTIVE"
+	StatusSuspended            = "SUSPENDED"
+	StatusActivationInProgress = "ACTIVATION_IN_PROGRESS"
+	StatusResuming             = "RESUMING"
 )
 
 type Client struct {
