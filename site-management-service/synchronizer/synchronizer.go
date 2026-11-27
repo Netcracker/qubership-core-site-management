@@ -1264,16 +1264,7 @@ func (s *Synchronizer) upsertTenantFromTM(ctx context.Context, tenant tm.Tenant)
 	if tenant.Namespace != "" { // this is legacy logic for deprecated composite platform design
 		namespaces = strings.Split(tenant.Namespace, ",")
 	}
-    storedActive := false
-	if isTransitionalActivationStatus(tenant.Status) {
-		if stored, err := s.FindByTenantId(ctx, tenant.ObjectId, "", false, false); err == nil {
-			storedActive = stored.Active
-		}
-	}
-	isActive := activeFlagFromTenantManager(tenant.Status, storedActive)
-	if isActive && tenant.Status != domain.Active {
-		logger.InfoC(ctx, "Tenant %s is %s in tenant-manager and stays active in site-management", tenant.ObjectId, tenant.Status)
-	}
+	isActive := tenant.Status == domain.Active
 
 	tenantToUpdate := domain.TenantDns{
 		TenantName:  tenant.TenantName,
@@ -1301,22 +1292,6 @@ func (s *Synchronizer) upsertTenantFromTM(ctx context.Context, tenant tm.Tenant)
 		return errors.New(err)
 	}
 	return nil
-}
-
-// isTransitionalActivationStatus reports whether a tenant-manager status comes before ACTIVE on the way to an active
-// tenant. Composite satellites receive these events too, and they share the database with the baseline.
-func isTransitionalActivationStatus(status string) bool {
-	return status == tm.StatusActivationInProgress || status == tm.StatusResuming
-}
-
-// activeFlagFromTenantManager returns the active flag to store for a tenant-manager status. A transitional status does
-// not deactivate a tenant that the database already has as active: such an event can be older than the activation that
-// is already stored, and writing active=false with empty sites would remove the routes of the baseline.
-func activeFlagFromTenantManager(status string, storedActive bool) bool {
-	if status == domain.Active {
-		return true
-	}
-	return storedActive && isTransitionalActivationStatus(status)
 }
 
 func (s *Synchronizer) SyncTenantsWithTM(ctx context.Context, tenantEvent tm.TenantWatchEvent) error {
