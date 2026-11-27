@@ -1276,7 +1276,10 @@ func (s *Synchronizer) upsertTenantFromTM(ctx context.Context, tenant tm.Tenant)
 		Sites:       domain.Sites{},
 	}
 
-	if isActive {
+	if isActive && s.compositeSatelliteMode {
+		// The baseline creates the tenant hosts of its own domain. A satellite must not create them from the event.
+		tenantToUpdate.Sites = s.satelliteSites(ctx, tenant)
+	} else if isActive {
 		tenantFromBase, err0 := s.FindByTenantId(ctx, tenant.ObjectId, "", false, true)
 		if err0 != nil {
 			logger.InfoC(ctx, "Searching of tenant with id %v finished with error %+v", tenant.ObjectId, err0)
