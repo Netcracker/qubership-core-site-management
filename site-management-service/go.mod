@@ -26,7 +26,7 @@ require (
 	github.com/uptrace/bun/dialect/pgdialect v1.3.0
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/valyala/fasthttp v1.79.0
-	k8s.io/apimachinery v0.37.2
+	k8s.io/apimachinery v0.37.3
 	sigs.k8s.io/gateway-api v1.6.3
 	sigs.k8s.io/yaml v1.6.0
 )
