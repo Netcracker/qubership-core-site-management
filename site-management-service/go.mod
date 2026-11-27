@@ -14,9 +14,9 @@ require (
 	github.com/netcracker/qubership-core-lib-go-dbaas-base-client/v3 v3.8.3
 	github.com/netcracker/qubership-core-lib-go-dbaas-postgres-client/v4 v4.5.6
 	github.com/netcracker/qubership-core-lib-go-fiber-server-utils/v2 v2.11.4
-	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.11.1-0.20261110134416-a2e71af3f20f
+	github.com/netcracker/qubership-core-lib-go-rest-utils/v2 v2.12.1-0.20261127092444-acecc53c0613
 	github.com/netcracker/qubership-core-lib-go-stomp-websocket/v3 v3.6.5
-	github.com/netcracker/qubership-core-lib-go/v3 v3.15.3
+	github.com/netcracker/qubership-core-lib-go/v3 v3.16.0
 	github.com/smarty/assertions v1.16.0
 	github.com/stretchr/testify v1.12.1
 	github.com/swaggo/swag v1.16.6
@@ -74,7 +74,7 @@ require (
 	github.com/go-openapi/swag/stringutils v0.27.1 // indirect
 	github.com/go-openapi/swag/typeutils v0.27.1 // indirect
 	github.com/go-openapi/swag/yamlutils v0.27.1 // indirect
-	github.com/go-pkgz/expirable-cache/v3 v3.1.1 // indirect
+	github.com/go-pkgz/expirable-cache/v3 v3.2.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gofiber/adaptor/v2 v2.2.1 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
